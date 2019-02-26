@@ -3,18 +3,19 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: Hexo
-subtitle:
+title: Linthan的博客
+subtitle: 双手合十，潜心修炼
 description:
-keywords:
-author: John Doe
+keywords: 后端,全栈,golang,js,react,javascript,开发者,程序猿,程序媛,代码,开源,Developer,Programmer,Coder,html,css,scss,less
+author: 付四凯
 language:
 timezone:
+email: 445366464@qq.com
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
-url: http://yoursite.com
-root: /
+url: http://linthan.github.io/blog
+root: /blog/
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 
@@ -78,7 +79,13 @@ theme: yilia
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
-  type:
+  type: git
+  repo: https://github.com/linthan/blog.git
+
+feed:
+  type: atom
+  path: atom.xml
+  limit: 100
 jsonContent:
   meta: false
   pages: false
