@@ -6,16 +6,20 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="http://linthan.github.io/blog">
-  <title>Archives: 2019 | Linthan的博客</title>
+  <title>golang并发控制和容错处理 | Linthan的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="keywords" content="后端,全栈,golang,js,react,javascript,开发者,程序猿,程序媛,代码,开源,Developer,Programmer,Coder,html,css,scss,less">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Linthan的博客">
-<meta property="og:url" content="http://linthan.github.io/blog/archives/2019/index.html">
+  <meta name="description" content="核心思想：通过 goroutineCnt 控制并发数量，当 channel 的请求超过一定的数量将请求压入 redis 队列。等待数量下降以后再压回队列">
+<meta name="keywords" content="技术,golang,并发编程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="golang并发控制和容错处理">
+<meta property="og:url" content="http://linthan.github.io/blog/2018/09/11/tech/golang/dairy-2018-0911-0912/index.html">
 <meta property="og:site_name" content="Linthan的博客">
+<meta property="og:description" content="核心思想：通过 goroutineCnt 控制并发数量，当 channel 的请求超过一定的数量将请求压入 redis 队列。等待数量下降以后再压回队列">
 <meta property="og:locale" content="default">
+<meta property="og:updated_time" content="2019-02-27T01:55:59.759Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Linthan的博客">
+<meta name="twitter:title" content="golang并发控制和容错处理">
+<meta name="twitter:description" content="核心思想：通过 goroutineCnt 控制并发数量，当 channel 的请求超过一定的数量将请求压入 redis 队列。等待数量下降以后再压回队列">
   
     <link rel="alternative" href="/atom.xml" title="Linthan的博客" type="application/atom+xml">
   
@@ -153,60 +157,160 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-tech/golang/dairy-2018-0911-0912" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/blog/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/blog/2019/02/26/xinqing/dairy-2019-0226-0302/" class="archive-article-date">
-  	<time datetime="2019-02-26T01:42:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-02-26</time>
-</a>
-        </div>
-    	 
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/blog/2019/02/26/xinqing/dairy-2019-0226-0302/">潜心下来，考虑未来</a>
+    <h1 class="article-title" itemprop="name">
+      golang并发控制和容错处理
     </h1>
   
 
-        <div class="article-info info-on-right">
-          
+        
+        <a href="/blog/2018/09/11/tech/golang/dairy-2018-0911-0912/" class="archive-article-date">
+  	<time datetime="2018-09-11T06:10:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2018-09-11</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p><strong>核心思想</strong>：通过 goroutineCnt 控制并发数量，当 channel 的请求超过一定的数量将请求压入 redis 队列。等待数量下降以后再压回队列</p>
+<a id="more"></a>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Service  定义服务</span></span><br><span class="line"><span class="keyword">type</span> Service <span class="keyword">struct</span> &#123;</span><br><span class="line">	ch           <span class="keyword">chan</span> vo.Req</span><br><span class="line">	goroutineCnt <span class="keyword">chan</span> <span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//IntService 初始化服务</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">IntService</span><span class="params">()</span> *<span class="title">Service</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	s := &amp;Service&#123;</span><br><span class="line">		ch:           <span class="built_in">make</span>(<span class="keyword">chan</span> vo.Req, <span class="number">6000</span>),</span><br><span class="line">		goroutineCnt: <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">10</span>),</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">go</span> s.run()</span><br><span class="line">	<span class="keyword">go</span> s.popOutRedis()</span><br><span class="line">	<span class="keyword">return</span> s</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Service)</span> <span class="title">run</span><span class="params">()</span></span> &#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		<span class="keyword">select</span> &#123;</span><br><span class="line">		<span class="keyword">case</span> req := &lt;-s.ch:</span><br><span class="line">			s.goroutineCnt &lt;- <span class="number">1</span></span><br><span class="line">			<span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">				<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">					<span class="keyword">if</span> err := <span class="built_in">recover</span>(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">						stack := <span class="built_in">make</span>([]<span class="keyword">byte</span>, <span class="number">4096</span>)</span><br><span class="line">						length := runtime.Stack(stack, <span class="literal">true</span>)</span><br><span class="line">						log.Error(<span class="string">"panic"</span>, <span class="string">"err"</span>, fmt.Sprintf(<span class="string">"%s %s"</span>, err, stack[:length]))</span><br><span class="line">						time.Sleep(time.Millisecond)</span><br><span class="line">					&#125;</span><br><span class="line">					&lt;-s.goroutineCnt</span><br><span class="line">				&#125;()</span><br><span class="line">				 <span class="comment">//运行代码的地方</span></span><br><span class="line">			&#125;()</span><br><span class="line"></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//Send 记录请求</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Service)</span> <span class="title">Send</span><span class="params">(req vspeed.SignForGoldReq)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(s.ch) &gt; <span class="number">5000</span> &#123;</span><br><span class="line">		s.pushInRedis(req)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	s.send(req)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Service)</span> <span class="title">send</span><span class="params">(req vo.Req)</span></span> &#123;</span><br><span class="line">	s.ch &lt;- req</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//pushInRedis 将请求输入到redis</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Service)</span> <span class="title">pushInRedis</span><span class="params">(req vo.Req)</span></span> &#123;</span><br><span class="line">	reqByte, _ := json.Marshal(req)</span><br><span class="line">	err := redis.Rpush(<span class="keyword">string</span>(reqByte))</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		log.Error(<span class="string">"pushInRedis fails"</span>, <span class="string">"err"</span>, err)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//popOutRedis 消费redis里面的数据</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Service)</span> <span class="title">popOutRedis</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		s.pop()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Service)</span> <span class="title">pop</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">		<span class="keyword">if</span> err := <span class="built_in">recover</span>(); err != <span class="literal">nil</span> &#123;</span><br><span class="line">			stack := <span class="built_in">make</span>([]<span class="keyword">byte</span>, <span class="number">4096</span>)</span><br><span class="line">			length := runtime.Stack(stack, <span class="literal">true</span>)</span><br><span class="line">			log.Error(<span class="string">"pop panic"</span>, <span class="string">"err"</span>, fmt.Sprintf(<span class="string">"%s %s"</span>, err, stack[:length]))</span><br><span class="line">			time.Sleep(time.Millisecond)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;()</span><br><span class="line">	<span class="keyword">if</span> redis.Llen() == <span class="number">0</span> || <span class="built_in">len</span>(s.ch) &gt; <span class="number">5000</span> &#123;</span><br><span class="line">		time.Sleep(<span class="number">1</span> * time.Second)</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	res := redis.Lpop(<span class="number">200</span>)</span><br><span class="line">	<span class="keyword">for</span> _, item := <span class="keyword">range</span> res &#123;</span><br><span class="line">		req := vo.Req&#123;&#125;</span><br><span class="line">		err := json.Unmarshal(item, &amp;req)</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="keyword">continue</span></span><br><span class="line">		&#125;</span><br><span class="line">		s.send(req)</span><br><span class="line">	&#125;</span><br><span class="line">	time.Sleep(time.Millisecond)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
 			 
         		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">发骚</a>
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">技术</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color2">golang</a>
+        		</li>
+      		 
+        		<li class="article-tag-list-item">
+        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color5">并发编程</a>
         		</li>
       		
 		</ul>
 	</div>
 
-          
+      
 
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
         </div>
-        <div class="clearfix"></div>
-    </header>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAAAAAB3DOFrAAACtklEQVR42u3aQU7DQAwF0N7/0kVihQQJ3/aYFullhUrazptFxv324xFfz8/r6pXnl+v7K9//e3XP/fde3XPgwsPDw2st/X5B90tPkMlmTdZwuU14eHh4a7zeQ/n+noR3fzBM1oOHh4f3DrykRE4+c3J44OHh4f0vXvWxnjz0e2EEHh4e3jvwkiCgGsjm4cL9sfFHWQseHh5ezKs2wN7h78X+Hh4eHt6gq169esV0LxSO1oOHh4e3wKu2oE4NXeWleT6gEB0PeHh4eId4k5/6hTg1CDXy9eQRBh4eHt4er/for5LmYwTVwwYPDw9vm1f9oFNDVBuv4+Hh4W3wqgVubwSqWqz3NuiXABcPDw/vEK836lR9AudxRnXEKvoWPDw8vKO8PCrt1au9cKG6htHvAzw8PLxWDNEbdZr06JOwo3p4XLLx8PDwjvJ6xfTZAnoymvDLduPh4eEt8PLHd287ei3/U4EFHh4e3jav17iqjgX0qv5eaY6Hh4e3x6uOW1Xj10lo27sTDw8Pb4+XFLjVtlayiOomPoLrcnQADw8Pb4GXvy2PD5I2f1LK5y26Hz4BDw8Pb4GXX71mWLUllje9jsHw8PDwiryzRW21oVUNKcrHBh4eHt4Cb6MFNS+Fk/UUQl48PDy8ZV5v4GlSQJ+KiaOhKzw8PLxDvF5ZPAlV8wJ6spV4eHh4e7xecFBtj20goxYaHh4e3hqvWv7Oj4rq0nvtOjw8PLyzvGfxyptYhd2NI488RMbDw8Pb4zVPkhiTHx7JJ1RLfzw8PLw9XjUUyN9bPWyqgwJRmIuHh4e3xqt2jvJDIi+XJydY1ADDw8PDexGvNziVF8H56Gq0KXh4eHgv5eWjqJOSuge7tODh4eGt8ZIwIr+nCq6OGpQTaDw8PLyjvNFP/dYR0hsRODW4gIeHhzfgfQBHl3OooZvHVAAAAABJRU5ErkJggg==" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
+  
+<nav id="article-nav">
+  
+    <a href="/blog/2018/10/05/tech/unix/dairy-2018-1005-1011/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          扯清同步IO、异步IO、阻塞IO和非阻塞IO的关系
+        
+      </div>
+    </a>
   
   
-    </div></section>
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
+        </div>
+        
+        
+    </div>
+</aside>
+
+
+
+  
+  
   
 
-    
+  
+
+  
+
+  
 
 
           </div>
@@ -230,8 +334,8 @@
 	var yiliaConfig = {
 		mathjax: false,
 		isHome: false,
-		isPost: false,
-		isArchive: true,
+		isPost: true,
+		isArchive: false,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,
