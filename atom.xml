@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Linthan的博客</title>
+  <icon>https://www.gravatar.com/avatar/dcbfb12735f186e09f9fb089ae9eb0a0</icon>
+  <subtitle>双手合十，潜心修炼</subtitle>
+  <link href="/blog/atom.xml" rel="self"/>
+  
+  <link href="http://linthan.github.io/blog/"/>
+  <updated>2019-02-27T01:42:16.266Z</updated>
+  <id>http://linthan.github.io/blog/</id>
+  
+  <author>
+    <name>付四凯</name>
+    <email>445366464@qq.com</email>
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>潜心下来，考虑未来</title>
+    <link href="http://linthan.github.io/blog/2019/02/26/xinqing/dairy-2019-0226-0302/"/>
+    <id>http://linthan.github.io/blog/2019/02/26/xinqing/dairy-2019-0226-0302/</id>
+    <published>2019-02-26T01:42:00.000Z</published>
+    <updated>2019-02-27T01:42:16.266Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+      <category term="发骚" scheme="http://linthan.github.io/blog/tags/%E5%8F%91%E9%AA%9A/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>扯清同步IO、异步IO、阻塞IO和非阻塞IO的关系</title>
+    <link href="http://linthan.github.io/blog/2018/10/05/tech/unix/dairy-2018-1005-1011/"/>
+    <id>http://linthan.github.io/blog/2018/10/05/tech/unix/dairy-2018-1005-1011/</id>
+    <published>2018-10-05T02:36:00.000Z</published>
+    <updated>2019-02-27T01:39:33.234Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="扯清同步-IO、异步-IO、阻塞-IO-和非阻塞-IO-的关系"><a href="#扯清同步-IO、异步-IO、阻塞-IO-和非阻塞-IO-的关系" class="headerlink" title="扯清同步 IO、异步 IO、阻塞 IO 和非阻塞 IO 的关系"></a>扯清同步 IO、异步 IO、阻塞 IO 和非阻塞 IO 的关系</h3><p>上面的这些名词经常会出现在各种博客，面试问题中。为了让我扯清这几个名词的关系，特意写了这篇博客。<br><strong>POSIX</strong>：可移植操作系统接口</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POSIX把同步IO操作定义为导致进程阻塞直到IO完成操作，反之则是一步IO</span><br></pre></td></tr></table></figure><p>上面的这个定义非常重要，这个定义是搞清同步非阻塞 IO 的关键。</p><a id="more"></a><h3 id="IO-模型"><a href="#IO-模型" class="headerlink" title="IO 模型"></a>IO 模型</h3><p>Linux 系统调用 recv 的例子，他用于从套接字上接收一个消息，因为是一个系统调用，所以调用时会从用户进程空间切换到内核空间运行一段时间再切换回来。默认情况下 recv 会等到网络数据到达并且复制到用户进程空间或者发生错误时返回。 请主意，这里涉及到 IO 的两个阶段。</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">1.数据准备阶段</span><br><span class="line">2.内核空间复制回用户进程缓冲区阶段</span><br></pre></td></tr></table></figure><p>根据 POSIX 的定义阶段 2 是否导致请求进程阻塞来判断是同步 IO 还是移步 IO。而阻塞和非阻塞是对于在数据准备好之前，进程是否可以区干别的事情。一个请求来了，必须一直阻塞等待结果，在这期间不接受新的请求，这个是阻塞。如果一个请求来了，如果数据没有好，等数据准备好了再服务这个请求。再这期间会接受新的请求。</p><ul><li>阻塞 IO 模型<br>使用 recv 的默认参数一直等数据直到拷贝到用户空间，这段时间内进程始终阻塞。A 同学用杯子装水，打开水龙头装满水然后离开。这一过程就可以看成是使用了阻塞 IO 模型，因为如果水龙头没有水，他也要等到有水并装满杯子才能离开去做别的事情。很显然，这种 IO 模型是同步的。</li><li>非阻塞 IO 模型<br>改变 flags，让 recv 不管有没有获取到数据都返回，如果没有数据那么一段时间后再调用 recv 看看，如此循环。B 同学也用杯子装水，打开水龙头后发现没有水，它离开了，过一会他又拿着杯子来看看……在中间离开的这些时间里，B 同学离开了装水现场(回到用户进程空间)，可以做他自己的事情。这就是非阻塞 IO 模型。但是它只有是检查无数据的时候是非阻塞的，在数据到达的时候依然要等待复制数据到用户空间(等着水将水杯装满)，因此它还是同步 IO。</li><li>IO 复用模型<br>这里在调用 recv 前先调用 select 或者 poll，这 2 个系统调用都可以在内核准备好数据(网络数据到达内核)时告知用户进程，这个时候再调用 recv 一定是有数据的。因此这一过程中它是阻塞于 select 或 poll，而没有阻塞于 recv，有人将非阻塞 IO 定义成在读写操作时没有阻塞于系统调用的 IO 操作(不包括数据从内核复制到用户空间时的阻塞，因为这相对于网络 IO 来说确实很短暂)，如果按这样理解，这种 IO 模型也能称之为非阻塞 IO 模型，但是按 POSIX 来看，它也是同步 IO，那么也和楼上一样称之为同步非阻塞 IO 吧。这种 IO 模型比较特别，分个段。因为它能同时监听多个文件描述符(fd)。这个时候 C 同学来装水，发现有一排水龙头，舍管阿姨告诉他这些水龙头都还没有水，等有水了告诉他。于是等啊等(select 调用中)，过了一会阿姨告诉他有水了，但不知道是哪个水龙头有水，自己看吧。于是 C 同学一个个打开，往杯子里装水(recv)。这里再顺便说说鼎鼎大名的 epoll(高性能的代名词啊)，epoll 也属于 IO 复用模型，主要区别在于舍管阿姨会告诉 C 同学哪几个水龙头有水了，不需要一个个打开看(当然还有其它区别)。</li><li>信号驱动 IO 模型<br>通过调用 sigaction 注册信号函数，等内核数据准备好的时候系统中断当前程序，执行信号函数(在这里面调用 recv)。D 同学让舍管阿姨等有水的时候通知他(注册信号函数)，没多久 D 同学得知有水了，跑去装水。是不是很像异步 IO？很遗憾，它还是同步 IO(省不了装水的时间啊)。 这个很容易误判为异步 IO，因为移步 IO 模型实现也是基于信号来通知应用进程来读取数据的。但是真正的异步 IO 模型是把数据从内核复制到用户进程空间这部分的操作也完成来，然后让应用进程来处理数据。所以这个操作依旧是同步 IO</li><li>异步 IO 模型<br>调用 aio_read，让内核等数据准备好，并且复制到用户进程空间后执行事先指定好的函数。E 同学让舍管阿姨将杯子装满水后通知他。整个过程 E 同学都可以做别的事情(没有 recv)，这才是真正的异步 IO。</li></ul><p><strong>ps</strong></p><p>以上内容全部来自于 UNIX 网络编程卷 1</p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;h3 id=&quot;扯清同步-IO、异步-IO、阻塞-IO-和非阻塞-IO-的关系&quot;&gt;&lt;a href=&quot;#扯清同步-IO、异步-IO、阻塞-IO-和非阻塞-IO-的关系&quot; class=&quot;headerlink&quot; title=&quot;扯清同步 IO、异步 IO、阻塞 IO 和非阻塞 IO 的关系&quot;&gt;&lt;/a&gt;扯清同步 IO、异步 IO、阻塞 IO 和非阻塞 IO 的关系&lt;/h3&gt;&lt;p&gt;上面的这些名词经常会出现在各种博客，面试问题中。为了让我扯清这几个名词的关系，特意写了这篇博客。&lt;br&gt;&lt;strong&gt;POSIX&lt;/strong&gt;：可移植操作系统接口&lt;/p&gt;
+&lt;figure class=&quot;highlight plain&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;POSIX把同步IO操作定义为导致进程阻塞直到IO完成操作，反之则是一步IO&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;上面的这个定义非常重要，这个定义是搞清同步非阻塞 IO 的关键。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="技术" scheme="http://linthan.github.io/blog/tags/%E6%8A%80%E6%9C%AF/"/>
+    
+      <category term="unix" scheme="http://linthan.github.io/blog/tags/unix/"/>
+    
+  </entry>
+  
+</feed>
