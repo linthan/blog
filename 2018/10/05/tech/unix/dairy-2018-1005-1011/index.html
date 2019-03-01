@@ -6,14 +6,14 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="http://linthan.github.io/blog">
-  <title>扯清同步IO、异步IO、阻塞IO和非阻塞IO的关系 | Linthan的博客</title>
+  <title>扯清同步IO、异步IO、阻塞IO和非阻塞IO的关系 | 付四凯的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <meta name="description" content="扯清同步 IO、异步 IO、阻塞 IO 和非阻塞 IO 的关系上面的这些名词经常会出现在各种博客，面试问题中。为了让我扯清这几个名词的关系，特意写了这篇博客。POSIX：可移植操作系统接口 1POSIX把同步IO操作定义为导致进程阻塞直到IO完成操作，反之则是一步IO 上面的这个定义非常重要，这个定义是搞清同步非阻塞 IO 的关键。">
 <meta name="keywords" content="技术,unix">
 <meta property="og:type" content="article">
 <meta property="og:title" content="扯清同步IO、异步IO、阻塞IO和非阻塞IO的关系">
 <meta property="og:url" content="http://linthan.github.io/blog/2018/10/05/tech/unix/dairy-2018-1005-1011/index.html">
-<meta property="og:site_name" content="Linthan的博客">
+<meta property="og:site_name" content="付四凯的博客">
 <meta property="og:description" content="扯清同步 IO、异步 IO、阻塞 IO 和非阻塞 IO 的关系上面的这些名词经常会出现在各种博客，面试问题中。为了让我扯清这几个名词的关系，特意写了这篇博客。POSIX：可移植操作系统接口 1POSIX把同步IO操作定义为导致进程阻塞直到IO完成操作，反之则是一步IO 上面的这个定义非常重要，这个定义是搞清同步非阻塞 IO 的关键。">
 <meta property="og:locale" content="default">
 <meta property="og:updated_time" content="2019-02-27T01:39:33.234Z">
@@ -21,7 +21,7 @@
 <meta name="twitter:title" content="扯清同步IO、异步IO、阻塞IO和非阻塞IO的关系">
 <meta name="twitter:description" content="扯清同步 IO、异步 IO、阻塞 IO 和非阻塞 IO 的关系上面的这些名词经常会出现在各种博客，面试问题中。为了让我扯清这几个名词的关系，特意写了这篇博客。POSIX：可移植操作系统接口 1POSIX把同步IO操作定义为导致进程阻塞直到IO完成操作，反之则是一步IO 上面的这个定义非常重要，这个定义是搞清同步非阻塞 IO 的关键。">
   
-    <link rel="alternative" href="/atom.xml" title="Linthan的博客" type="application/atom+xml">
+    <link rel="alternative" href="/atom.xml" title="付四凯的博客" type="application/atom+xml">
   
   
     <link rel="icon" href="/favicon.png">
@@ -47,11 +47,11 @@
 <div class="overlay" style="background: #4d4d4d"></div>
 <div class="intrude-less">
 	<header id="header" class="inner">
-		<a href="/" class="profilepic">
+		<a href="/blog" class="profilepic">
 			<img src="/blog/assets/blogImg/mylog.jpg" class="js-avatar">
 		</a>
 		<hgroup>
-		  <h1 class="header-author"><a href="/">付四凯</a></h1>
+		  <h1 class="header-author"><a href="/blog">付四凯</a></h1>
 		</hgroup>
 		
 		<p class="header-subtitle">双手合十，潜心修炼</p>
