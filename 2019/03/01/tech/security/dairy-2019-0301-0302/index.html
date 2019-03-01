@@ -6,16 +6,22 @@
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <link rel="dns-prefetch" href="http://linthan.github.io/blog">
-  <title>Archives: 2019 | Linthan的博客</title>
+  <title>接口加密鉴权 | Linthan的博客</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="keywords" content="后端,全栈,golang,js,react,javascript,开发者,程序猿,程序媛,代码,开源,Developer,Programmer,Coder,html,css,scss,less">
-<meta property="og:type" content="website">
-<meta property="og:title" content="Linthan的博客">
-<meta property="og:url" content="http://linthan.github.io/blog/archives/2019/index.html">
+  <meta name="description" content="使用场景先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，包括付费皮肤,书籍,本地游戏特效等等。 具体实践背景知识 base64 编码 【中文】 base64 编码 【english】 md5 加密 【english】 md5 加密【中文】">
+<meta name="keywords" content="技术,安全">
+<meta property="og:type" content="article">
+<meta property="og:title" content="接口加密鉴权">
+<meta property="og:url" content="http://linthan.github.io/blog/2019/03/01/tech/security/dairy-2019-0301-0302/index.html">
 <meta property="og:site_name" content="Linthan的博客">
+<meta property="og:description" content="使用场景先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，包括付费皮肤,书籍,本地游戏特效等等。 具体实践背景知识 base64 编码 【中文】 base64 编码 【english】 md5 加密 【english】 md5 加密【中文】">
 <meta property="og:locale" content="default">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/blogImg/security/dairy-20190301.png">
+<meta property="og:updated_time" content="2019-03-01T02:52:09.382Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Linthan的博客">
+<meta name="twitter:title" content="接口加密鉴权">
+<meta name="twitter:description" content="使用场景先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，包括付费皮肤,书籍,本地游戏特效等等。 具体实践背景知识 base64 编码 【中文】 base64 编码 【english】 md5 加密 【english】 md5 加密【中文】">
+<meta name="twitter:image" content="http://linthan.github.io/blog/assets/blogImg/security/dairy-20190301.png">
   
     <link rel="alternative" href="/atom.xml" title="Linthan的博客" type="application/atom+xml">
   
@@ -153,36 +159,88 @@
             <canvas data-colors="#eaeaea" data-sectionHeight="100" data-contentId="js-content" id="myCanvas1" class="anm-canvas"></canvas>
           </div>
           <div id="js-content" class="content-ll">
-            
-  
-  
+            <article id="post-tech/security/dairy-2019-0301-0302" class="article article-type-post " itemscope itemprop="blogPost">
+  <div class="article-inner">
     
-    
-      
-      
-      <section class="archives-wrap">
-        <div class="archive-year-wrap">
-          <a href="/blog/archives/2019" class="archive-year">2019</a>
-        </div>
-        <div class="archives">
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/blog/2019/03/01/tech/security/dairy-2019-0301-0302/" class="archive-article-date">
-  	<time datetime="2019-03-01T02:36:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-03-01</time>
-</a>
-        </div>
-    	 
+      <header class="article-header">
+        
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/blog/2019/03/01/tech/security/dairy-2019-0301-0302/">接口加密鉴权</a>
+    <h1 class="article-title" itemprop="name">
+      接口加密鉴权
     </h1>
   
 
-        <div class="article-info info-on-right">
-          
+        
+        <a href="/blog/2019/03/01/tech/security/dairy-2019-0301-0302/" class="archive-article-date">
+  	<time datetime="2019-03-01T02:36:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-03-01</time>
+</a>
+        
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h2><p>先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，<br>包括付费皮肤,书籍,本地游戏特效等等。</p>
+<h2 id="具体实践"><a href="#具体实践" class="headerlink" title="具体实践"></a>具体实践</h2><h3 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h3><ul>
+<li><a href="https://baike.baidu.com/item/base64/8545775?fr=aladdin" title="base64 编码" target="_blank" rel="noopener">base64 编码 【中文】</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Base64" title="base64 编码" target="_blank" rel="noopener">base64 编码 【english】</a></li>
+<li><a href="https://en.wikipedia.org/wiki/MD5" title="md5 加密" target="_blank" rel="noopener">md5 加密 【english】</a></li>
+<li><a href="https://baike.baidu.com/item/MD5/212708?fr=aladdin" title="md5 加密" target="_blank" rel="noopener">md5 加密【中文】</a><a id="more"></a>
+</li>
+</ul>
+<h3 id="具体使用场景"><a href="#具体使用场景" class="headerlink" title="具体使用场景"></a>具体使用场景</h3><p>app 客户端推出了一个一键换肤的功能,考虑到这个换肤的功能后期会存在付费的功能,还可能会计算挂钩的收益结算，需要的皮肤这种资源进行保护。<br>如果不进行保护的话会存在如下风险。</p>
+<ul>
+<li>用户通过篡改接口来更换皮肤包资源可以自己随意定制皮肤包。如果教程公布到网上，这样第三方的山寨皮肤包就会盛行。绕过审核，产生抹黑公司形象和难以想象的法律风险。</li>
+<li>用户只要懂得抓包和接口劫持篡改的知识，就可以将网上流传的付费皮肤包资源篡改到付费皮肤包的网络请求中去。达到免费使用付费皮肤的目的。</li>
+</ul>
+<h3 id="具体操作方法"><a href="#具体操作方法" class="headerlink" title="具体操作方法"></a>具体操作方法</h3><p><strong>问题：</strong> 客户端需要相信接口下发的数据是真实的，接口端的数据不能被篡改，一旦被篡改客户端可以感知的到。</p>
+<p><strong>思路：</strong> 客户端传一个随机字符串给服务端，服务端接受到请求后再参数一个随机字符串，根据这两个字符串加上需要返回的数据再加上约定要的秘钥 key 生成一个签名<br>然后将这个签名和服务端的随机数和需要传递的数据传递客户端，客户端根据这些数据来校验这个签名是否合法。</p>
+<h4 id="备注"><a href="#备注" class="headerlink" title="备注"></a>备注</h4><p>返回的数据一般是 json 格式的数据，计算签名的时候需要使用 json 格式数据的字符串，经过 base64 编码以后的字符串来计算 sign。传递数据给客户端的数据是这个 base64 编码字符串。<br><strong>理由如下：</strong><br>实际操作中会存在服务端 json 字符串和客户端 json 字符串经过网络传输以后数据不一致的情况,计算的 sign 会不一致。直接使用 json 字符串，还有不必要的字符串转义的烦恼。</p>
+<h4 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h4><p><img src="/blog/assets/blogImg/security/dairy-20190301.png" alt></p>
+<h4 id="接口格式"><a href="#接口格式" class="headerlink" title="接口格式"></a>接口格式</h4><p><strong>请求参数</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>字段解释</th>
+<th>字段类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>id</td>
+<td>int</td>
+<td>0</td>
+<td>大于 0</td>
+</tr>
+<tr>
+<td>ver</td>
+<td>版本</td>
+<td>int</td>
+<td>0</td>
+<td>大于 0</td>
+</tr>
+<tr>
+<td>r</td>
+<td>随机字符串</td>
+<td>string</td>
+<td>“”</td>
+<td>长度 16</td>
+</tr>
+</tbody>
+</table>
+<p><strong>返回格式</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;error&quot;: 0, // 一直为0</span><br><span class="line">    &quot;msg&quot;: &quot;ok&quot;,</span><br><span class="line">    &quot;data&quot;: &#123;</span><br><span class="line">    	&quot;e&quot;: 0, // 真实error值</span><br><span class="line">        &quot;r&quot;: &quot;uk!cntZs)qk+t&amp;gF&quot;,	// 随机字符串</span><br><span class="line">        &quot;s&quot;: &quot;3eee660f7728b411a96b9a14cd8d2be6&quot;, // 签名</span><br><span class="line">        &quot;data&quot;: &quot;base64 字符串&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      
 	<div class="article-tag tagcloud">
 		<i class="icon-price-tags icon"></i>
 		<ul class="article-tag-list">
@@ -198,57 +256,106 @@
 		</ul>
 	</div>
 
-          
+      
 
+      
+
+      
+        
+<div class="share-btn share-icons tooltip-left">
+  <div class="tooltip tooltip-east">
+    <span class="tooltip-item">
+      <a href="javascript:;" class="share-sns share-outer">
+        <i class="icon icon-share"></i>
+      </a>
+    </span>
+    <span class="tooltip-content">
+      <div class="share-wrap">
+        <div class="share-icons">
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="icon icon-weibo"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="icon icon-weixin"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="icon icon-qq"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="icon icon-douban"></i>
+          </a>
+          <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a>
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="icon icon-facebook"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="icon icon-twitter"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="icon icon-google"></i>
+          </a>
         </div>
-        <div class="clearfix"></div>
-    </header>
+      </div>
+    </span>
+  </div>
+</div>
+
+<div class="page-modal wx-share js-wx-box">
+    <a class="close js-modal-close" href="javascript:;"><i class="icon icon-close"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN4AAADeCAAAAAB3DOFrAAACtUlEQVR42u3aQW4jMQwEwPz/09nrAsk43aKY9QI1J8OOR6oxIDIkPz7i6/OvK3/n9X2e/vLrPb++vnzh4eHhDbb+tHzyacKYbD3Zzzf3wcPDw1vj5Qd0/miSMJCslTzQx/fx8PDw3oz3ekPtQZ+n4Hh4eHj/L+91mjsPA20KjoeHh/ebvLzckBdw829NVrxWa8HDw8M7qQnU6e+/er3S38PDw8Mbd9XbI7stLuT7OdwtHh4e3gKvLbnmral2W21hotgnHh4e3lVesul2+cNiazloFd0fDw8Pb4GX3OJsFGBeGWiDxOPqeHh4eAu8s0N8khDnbbDkzkmZAw8PD+8WL/la25RKwsMksS6+i4eHh7fAa1tQbaE2CSHzYkcxeoWHh4c35uXHdJ6bJ0Gl/QXOmmd4eHh4G7z84M6T7LbckIeNfKzhm5IEHh4e3lVem9qeNbfOAkwyblWEBzw8PLxLvDadPSvC3oLVgw54eHh4C7xJYWKeQJ+RomkIPDw8vAXefBAqT53zIHGr8YaHh4e3wZskzZMt3h26+mFdPDw8vKu8vL2UF20ng1aTB/TD0BUeHh7eMu/CrePi7KRAXJRu8fDw8C7x2uXbAanX1PaxtsVlPDw8vA3epJ0/b26dpd3F74aHh4e3wDtrg7ULt4MC8wLuqMuHh4eHV/LyYkS70fmwwoXAgIeHh7fGa5fMCxn5cZ8k3MXQFR4eHt4a79ZBfxYY6kM/iQV4eHh4V3mf5ZUXHV5/N/k0Dz+PO8HDw8Nb4LVH7aT11QaAdkxhdOHh4eGVvLbRdaEpVe6nDTZ4eHh4v8NrCw156eGsTHwtsuHh4eG9Ae9sK5Px07OGGR4eHt678c6S8rOUPVnl8ZHh4eHhrfHaQm1+uCdbaXlFYwwPDw9vgTf5j36yxXY04WPvwsPDw0uvPyBi7gPaBGGmAAAAAElFTkSuQmCC" alt="微信分享二维码">
+    </div>
+</div>
+
+<div class="mask js-mask"></div>
+      
+      <div class="clearfix"></div>
+    </div>
   </div>
 </article>
+
   
-    
-    
-    <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      	<div class="article-meta">
-	      	<a href="/blog/2019/02/26/xinqing/dairy-2019-0226-0302/" class="archive-article-date">
-  	<time datetime="2019-02-26T01:42:00.000Z" itemprop="datePublished"><i class="icon-calendar icon"></i>2019-02-26</time>
-</a>
+<nav id="article-nav">
+  
+  
+    <a href="/blog/2019/02/26/xinqing/dairy-2019-0226-0302/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">潜心下来，考虑未来</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+<aside class="wrap-side-operation">
+    <div class="mod-side-operation">
+        
+        <div class="jump-container" id="js-jump-container" style="display:none;">
+            <a href="javascript:void(0)" class="mod-side-operation__jump-to-top">
+                <i class="icon-font icon-back"></i>
+            </a>
+            <div id="js-jump-plan-container" class="jump-plan-container" style="top: -11px;">
+                <i class="icon-font icon-plane jump-plane"></i>
+            </div>
         </div>
-    	 
+        
+        
+    </div>
+</aside>
+
+
+
   
-    <h1 itemprop="name">
-      <a class="archive-article-title" href="/blog/2019/02/26/xinqing/dairy-2019-0226-0302/">潜心下来，考虑未来</a>
-    </h1>
+  
   
 
-        <div class="article-info info-on-right">
-          
-	<div class="article-tag tagcloud">
-		<i class="icon-price-tags icon"></i>
-		<ul class="article-tag-list">
-			 
-        		<li class="article-tag-list-item">
-        			<a href="javascript:void(0)" class="js-tag article-tag-list-link color3">发骚</a>
-        		</li>
-      		
-		</ul>
-	</div>
-
-          
-
-        </div>
-        <div class="clearfix"></div>
-    </header>
-  </div>
-</article>
-  
-  
-    </div></section>
   
 
-    
+  
+
+  
 
 
           </div>
@@ -272,8 +379,8 @@
 	var yiliaConfig = {
 		mathjax: false,
 		isHome: false,
-		isPost: false,
-		isArchive: true,
+		isPost: true,
+		isArchive: false,
 		isTag: false,
 		isCategory: false,
 		open_in_new: false,
