@@ -28,7 +28,7 @@ rss: /atom.xml
 # 是否需要修改 root 路径
 # 如果您的网站存放在子目录中，例如 http://yoursite.com/blog，
 # 请将您的 url 设为 http://yoursite.com/blog 并把 root 设为 /blog/。
-root: /
+root: /blog
 
 # Content
 
@@ -124,3 +124,4 @@ friends:
   我的简历: /
 
 aboutme: Ethan<br>毕业于华科，就职于斗鱼<br><br>热爱健身和笑话<br/>目前是一名后端web开发<br/>
+#  <a style="position:absolute;bottom:20%;color:#fffdd8;" target="_blank" href="/>我的简历</a><br />
