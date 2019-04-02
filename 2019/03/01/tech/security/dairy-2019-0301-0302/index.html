@@ -17,7 +17,7 @@
 <meta property="og:description" content="使用场景先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，包括付费皮肤,书籍,本地游戏特效等等。 具体实践背景知识 base64 编码 【中文】 base64 编码 【english】 md5 加密 【english】 md5 加密【中文】">
 <meta property="og:locale" content="default">
 <meta property="og:image" content="http://linthan.github.io/blog/assets/blogImg/security/dairy-20190301.png">
-<meta property="og:updated_time" content="2019-03-01T02:52:09.382Z">
+<meta property="og:updated_time" content="2019-04-02T06:21:59.129Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="接口加密鉴权">
 <meta name="twitter:description" content="使用场景先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，包括付费皮肤,书籍,本地游戏特效等等。 具体实践背景知识 base64 编码 【中文】 base64 编码 【english】 md5 加密 【english】 md5 加密【中文】">
@@ -194,6 +194,7 @@
 </ul>
 <h3 id="具体操作方法"><a href="#具体操作方法" class="headerlink" title="具体操作方法"></a>具体操作方法</h3><p><strong>问题：</strong> 客户端需要相信接口下发的数据是真实的，接口端的数据不能被篡改，一旦被篡改客户端可以感知的到。</p>
 <p><strong>思路：</strong> 客户端传一个随机字符串给服务端，服务端接受到请求后再参数一个随机字符串，根据这两个字符串加上需要返回的数据再加上约定要的秘钥 key 生成一个签名<br>然后将这个签名和服务端的随机数和需要传递的数据传递客户端，客户端根据这些数据来校验这个签名是否合法。</p>
+<p><strong>代码 demo</strong>:<a href="https://github.com/linthan/encryptapi-demo" title="demo" target="_blank" rel="noopener">点我</a></p>
 <h4 id="备注"><a href="#备注" class="headerlink" title="备注"></a>备注</h4><p>返回的数据一般是 json 格式的数据，计算签名的时候需要使用 json 格式数据的字符串，经过 base64 编码以后的字符串来计算 sign。传递数据给客户端的数据是这个 base64 编码字符串。<br><strong>理由如下：</strong><br>实际操作中会存在服务端 json 字符串和客户端 json 字符串经过网络传输以后数据不一致的情况,计算的 sign 会不一致。直接使用 json 字符串，还有不必要的字符串转义的烦恼。</p>
 <h4 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h4><p><img src="/blog/assets/blogImg/security/dairy-20190301.png" alt></p>
 <h4 id="接口格式"><a href="#接口格式" class="headerlink" title="接口格式"></a>接口格式</h4><p><strong>请求参数</strong>：</p>
@@ -320,8 +321,17 @@
   
 <nav id="article-nav">
   
+    <a href="/blog/2019/04/02/xinqing/dairy-2019-0401-0402/" id="article-nav-newer" class="article-nav-link-wrap">
+      <i class="icon-circle-left"></i>
+      <div class="article-nav-title">
+        
+          中了一种毒
+        
+      </div>
+    </a>
   
-    <a href="/blog/2019/02/26/xinqing/dairy-2019-0226-0302/" id="article-nav-older" class="article-nav-link-wrap">
+  
+    <a href="/blog/2019/01/26/xinqing/dairy-2019-0226-0302/" id="article-nav-older" class="article-nav-link-wrap">
       <div class="article-nav-title">潜心下来，考虑未来</div>
       <i class="icon-circle-right"></i>
     </a>
