@@ -15,7 +15,7 @@ email: 445366464@qq.com
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
 url: http://linthan.github.io/blog
-root: /blog/
+root: https://resource.melican.cn/blog/
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 
@@ -50,7 +50,7 @@ highlight:
 # per_page: Posts displayed per page. (0 = disable pagination)
 # order_by: Posts order. (Order by date descending by default)
 index_generator:
-  path: ""
+  path: ''
   per_page: 10
   order_by: -date
 
