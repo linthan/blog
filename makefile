@@ -8,4 +8,7 @@ build:
 .PHONY: pub
 pub: build
 	hexo deploy
-		
+
+.PHONY: upload
+upload:
+	jenkins-tool cos --dir public --target blog --bucket resource 		
