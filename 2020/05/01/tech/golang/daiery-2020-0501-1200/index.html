@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/blog/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/blog/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/blog/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/blog/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="Go 语言是为并发而生的语言，Go 语言是为数不多的在语言层面实现并发的语言；也正是 Go 语言的并发特性，吸引了全球无数的开发者。">
+<meta name="keywords" content="技术,golang,并发编程">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Go并发原理">
+<meta property="og:url" content="http://linthan.github.io/blog/2020/05/01/tech/golang/daiery-2020-0501-1200/index.html">
+<meta property="og:site_name" content="付四凯的博客">
+<meta property="og:description" content="Go 语言是为并发而生的语言，Go 语言是为数不多的在语言层面实现并发的语言；也正是 Go 语言的并发特性，吸引了全球无数的开发者。">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/send.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/accept.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/communicate.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/yonghutai.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/neiheji.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/liangji.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/GMPrelation.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/giveupP.png">
+<meta property="og:updated_time" content="2020-06-29T07:28:05.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Go并发原理">
+<meta name="twitter:description" content="Go 语言是为并发而生的语言，Go 语言是为数不多的在语言层面实现并发的语言；也正是 Go 语言的并发特性，吸引了全球无数的开发者。">
+<meta name="twitter:image" content="http://linthan.github.io/blog/assets/golang/channel/send.png">
+
+
+
+  <link rel="alternate" href="/blog/atom.xml" title="付四凯的博客" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://linthan.github.io/blog/2020/05/01/tech/golang/daiery-2020-0501-1200/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Go并发原理 | 付四凯的博客</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/blog/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">付四凯的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <h1 class="site-subtitle" itemprop="description">双手合十，潜心修炼</h1>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags<span class="badge">12</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">0</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">37</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://linthan.github.io/blog/blog/2020/05/01/tech/golang/daiery-2020-0501-1200/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付四凯">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="付四凯的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">Go并发原理
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-05-01 12:00:00" itemprop="dateCreated datePublished" datetime="2020-05-01T12:00:00+08:00">2020-05-01</time>
+            
+
+            
+          </span>
+
+          
+
+          
+            
+            
+          
+
+          
+          
+            <span id="/blog/2020/05/01/tech/golang/daiery-2020-0501-1200/" class="leancloud_visitors" data-flag-title="Go并发原理">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Views: </span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>Go 语言是为并发而生的语言，Go 语言是为数不多的在语言层面实现并发的语言；也正是 Go 语言的并发特性，吸引了全球无数的开发者。</p>
+<a id="more"></a>
+<h2 id="并发-concurrency-和并行-parallellism"><a href="#并发-concurrency-和并行-parallellism" class="headerlink" title="并发(concurrency)和并行(parallellism)"></a>并发(concurrency)和并行(parallellism)</h2><p><strong>并发(concurrency)</strong>：两个或两个以上的任务在一段时间内被执行。我们不必 care 这些任务在某一个时间点是否是同时执行，可能同时执行，也可能不是，我们只关心在一段时间内，哪怕是很短的时间（一秒或者两秒）是否执行解决了两个或两个以上任务。</p>
+<p>并行(parallellism)：两个或两个以上的任务在同一时刻被同时执行。</p>
+<p>并发说的是逻辑上的概念，而并行，强调的是物理运行状态。并发“包含”并行。<br>（详情请见：Rob Pike 的 <a href="https://talks.golang.org/2012/concurrency.slide#1" target="_blank" rel="noopener">PPT</a>）</p>
+<h2 id="Go-的-CSP-并发模型"><a href="#Go-的-CSP-并发模型" class="headerlink" title="Go 的 CSP 并发模型"></a>Go 的 CSP 并发模型</h2><p>Go 实现了两种并发形式。第一种是大家普遍认知的：多线程共享内存。其实就是 Java 或者 C++等语言中的多线程开发。另外一种是 Go 语言特有的，也是 Go 语言推荐的：CSP（communicating sequential processes）并发模型。</p>
+<p>CSP 并发模型是在 1970 年左右提出的概念，属于比较新的概念，不同于传统的多线程通过共享内存来通信，CSP 讲究的是“以通信的方式来共享内存”。</p>
+<p>请记住下面这句话：</p>
+<p><strong>Do not communicate by sharing memory; instead, share memory by communicating.</strong></p>
+<p>“不要以共享内存的方式来通信，相反，要通过通信来共享内存。”</p>
+<p>普通的线程并发模型，就是像 Java、C++、或者 Python，他们线程间通信都是通过共享内存的方式来进行的。非常典型的方式就是，在访问共享数据（例如数组、Map、或者某个结构体或对象）的时候，通过锁来访问，因此，在很多时候，衍生出一种方便操作的数据结构，叫做“线程安全的数据结构”。例如 Java 提供的包”java.util.concurrent”中的数据结构。Go 中也实现了传统的线程并发模型。</p>
+<p>Go 的 CSP 并发模型，是通过 goroutine 和 channel 来实现的。</p>
+<ul>
+<li>goroutine 是 Go 语言中并发的执行单位。有点抽象，其实就是和传统概念上的”线程“类似，可以理解为”线程“。</li>
+<li>channel 是 Go 语言中各个并发结构体(goroutine)之前的通信机制。 通俗的讲，就是各个 goroutine 之间通信的”管道“，有点类似于 Linux 中的管道。</li>
+</ul>
+<p>生成一个 goroutine 的方式非常的简单：Go 一下，就生成了。</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">go</span> f();</span><br></pre></td></tr></table></figure>
+<p><strong>通信机制 channel 也很方便，传数据用 channel &lt;- data，取数据用&lt;-channel。</strong></p>
+<p>在通信过程中，传数据 channel &lt;- data 和取数据&lt;-channel 必然会成对出现，因为这边传，那边取，两个 goroutine 之间才会实现通信。</p>
+<p>而且不管传还是取，必阻塞，直到另外的 goroutine 传或者取为止。</p>
+<p>有两个 goroutine，其中一个发起了向 channel 中发起了传值操作。（goroutine 为矩形，channel 为箭头）<br><img src="/blog/assets/golang/channel/send.png" alt="send"></p>
+<p>左边的 goroutine 开始阻塞，等待有人接收。</p>
+<p>这时候，右边的 goroutine 发起了接收操作。<br><img src="/blog/assets/golang/channel/accept.png" alt="accept"><br>右边的 goroutine 也开始阻塞，等待别人传送。</p>
+<p>这时候，两边 goroutine 都发现了对方，于是两个 goroutine 开始一传，一收。<br><img src="/blog/assets/golang/channel/communicate.png" alt="communicate"><br>这便是 Golang CSP 并发模型最基本的形式。</p>
+<h2 id="Go-并发模型的实现原理"><a href="#Go-并发模型的实现原理" class="headerlink" title="Go 并发模型的实现原理"></a>Go 并发模型的实现原理</h2><p>我们先从线程讲起，无论语言层面何种并发模型，到了操作系统层面，一定是以线程的形态存在的。而操作系统根据资源访问权限的不同，体系架构可分为用户空间和内核空间；内核空间主要操作访问 CPU 资源、I/O 资源、内存资源等硬件资源，为上层应用程序提供最基本的基础资源，用户空间呢就是上层应用程序的固定活动空间，用户空间不可以直接访问资源，必须通过“系统调用”、“库函数”或“Shell 脚本”来调用内核空间提供的资源。</p>
+<p>我们现在的计算机语言，可以狭义的认为是一种“软件”，它们中所谓的“线程”，往往是用户态的线程，和操作系统本身内核态的线程（简称 KSE），还是有区别的。</p>
+<p>线程模型的实现，可以分为以下几种方式：</p>
+<h3 id="用户级线程模型"><a href="#用户级线程模型" class="headerlink" title="用户级线程模型"></a>用户级线程模型</h3><p><img src="/blog/assets/golang/channel/yonghutai.png" alt="yonghutai"><br>如图所示，多个用户态的线程对应着一个内核线程，程序线程的创建、终止、切换或者同步等线程工作必须自身来完成。</p>
+<h3 id="内核级线程模型"><a href="#内核级线程模型" class="headerlink" title="内核级线程模型"></a>内核级线程模型</h3><p><img src="/blog/assets/golang/channel/neiheji.png" alt="neiheji"><br>这种模型直接调用操作系统的内核线程，所有线程的创建、终止、切换、同步等操作，都由内核来完成。C++就是这种。</p>
+<h3 id="两级线程模型"><a href="#两级线程模型" class="headerlink" title="两级线程模型"></a>两级线程模型</h3><p><img src="/blog/assets/golang/channel/liangji.png" alt="liangji"></p>
+<p>这种模型是介于用户级线程模型和内核级线程模型之间的一种线程模型。这种模型的实现非常复杂，和内核级线程模型类似，一个进程中可以对应多个内核级线程，但是进程中的线程不和内核线程一一对应；这种线程模型会先创建多个内核级线程，然后用自身的用户级线程去对应创建的多个内核级线程，自身的用户级线程需要本身程序去调度，内核级的线程交给操作系统内核去调度。</p>
+<p>Go 语言的线程模型就是一种特殊的两级线程模型。暂且叫它“MPG”模型吧。</p>
+<h2 id="Go-线程实现模型-MPG"><a href="#Go-线程实现模型-MPG" class="headerlink" title="Go 线程实现模型 MPG"></a>Go 线程实现模型 MPG</h2><ul>
+<li><p>M 指的是 Machine，一个 M 直接关联了一个内核线程。</p>
+</li>
+<li><p>P 指的是”processor”，代表了 M 所需的上下文环境，也是处理用户级代码逻辑的处理器。</p>
+</li>
+<li><p>G 指的是 Goroutine，其实本质上也是一种轻量级的线程。</p>
+</li>
+</ul>
+<p>三者关系如下图所示：<br><img src="/blog/assets/golang/channel/GMPrelation.png" alt="GMPrelation"></p>
+<p>以上这个图讲的是两个线程(内核线程)的情况。一个 M 会对应一个内核线程，一个 M 也会连接一个上下文 P，一个上下文 P 相当于一个“处理器”，一个上下文连接一个或者多个 Goroutine。P(Processor)的数量是在启动时被设置为环境变量 GOMAXPROCS 的值，或者通过运行时调用函数 runtime.GOMAXPROCS()进行设置。Processor 数量固定意味着任意时刻只有固定数量的线程在运行 go 代码。Goroutine 中就是我们要执行并发的代码。图中 P 正在执行的 Goroutine 为蓝色的；处于待执行状态的 Goroutine 为灰色的，灰色的 Goroutine 形成了一个队列 runqueues</p>
+<p>三者关系的宏观的图为：</p>
+<p><strong>抛弃 P(Processor)</strong></p>
+<p>你可能会想，为什么一定需要一个上下文，我们能不能直接除去上下文，让 Goroutine 的 runqueues 挂到 M 上呢？答案是不行，需要上下文的目的，是让我们可以直接放开其他线程，当遇到内核线程阻塞的时候。</p>
+<p>一个很简单的例子就是系统调用 sysall，一个线程肯定不能同时执行代码和系统调用被阻塞，这个时候，此线程 M 需要放弃当前的上下文环境 P，以便可以让其他的 Goroutine 被调度执行。</p>
+<p><img src="/blog/assets/golang/channel/giveupP.png" alt="giveupP"><br>如上图左图所示，M0 中的 G0 执行了 syscall，然后就创建了一个 M1(也有可能本身就存在，没创建)，（转向右图）然后 M0 丢弃了 P，等待 syscall 的返回值，M1 接受了 P，将·继续执行 Goroutine 队列中的其他 Goroutine。</p>
+<p>当系统调用 syscall 结束后，M0 会“偷”一个上下文，如果不成功，M0 就把它的 Gouroutine G0 放到一个全局的 runqueue 中，然后自己放到线程池或者转入休眠状态。全局 runqueue 是各个 P 在运行完自己的本地的 Goroutine runqueue 后用来拉取新 goroutine 的地方。P 也会周期性的检查这个全局 runqueue 上的 goroutine，否则，全局 runqueue 上的 goroutines 可能得不到执行而饿死。</p>
+<p><strong>均衡的分配工作</strong></p>
+<p>按照以上的说法，上下文 P 会定期的检查全局的 goroutine 队列中的 goroutine，以便自己在消费掉自身 Goroutine 队列的时候有事可做。假如全局 goroutine 队列中的 goroutine 也没了呢？就从其他运行的中的 P 的 runqueue 里偷。</p>
+<p>每个 P 中的 Goroutine 不同导致他们运行的效率和时间也不同，在一个有很多 P 和 M 的环境中，不能让一个 P 跑完自身的 Goroutine 就没事可做了，因为或许其他的 P 有很长的 goroutine 队列要跑，得需要均衡。<br>该如何解决呢？</p>
+<p>Go 的做法倒也直接，从其他 P 中偷一半！</p>
+<h2 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a>参考文献：</h2><ol>
+<li><a href="https://morsmachine.dk/go-scheduler" target="_blank" rel="noopener">The Go scheduler</a></li>
+<li>《Go 并发编程第一版》</li>
+</ol>
+
+      
+    </div>
+
+    
+      
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>付四凯</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://linthan.github.io/blog/2020/05/01/tech/golang/daiery-2020-0501-1200/" title="Go并发原理">http://linthan.github.io/blog/2020/05/01/tech/golang/daiery-2020-0501-1200/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/blog/tags/技术/" rel="tag"><i class="fa fa-tag"></i> 技术</a>
+          
+            <a href="/blog/tags/golang/" rel="tag"><i class="fa fa-tag"></i> golang</a>
+          
+            <a href="/blog/tags/并发编程/" rel="tag"><i class="fa fa-tag"></i> 并发编程</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/blog/2019/04/02/xinqing/dairy-2019-0401-0402/" rel="next" title="好好学习天天向上">
+                <i class="fa fa-chevron-left"></i> 好好学习天天向上
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/blog/2020/06/29/tech/golang/daiery-2020-0629-1011/" rel="prev" title="为什么Go语言不允许循环引入?">
+                为什么Go语言不允许循环引入? <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg" alt="付四凯">
+            
+              <p class="site-author-name" itemprop="name">付四凯</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/blog/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/blog/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#并发-concurrency-和并行-parallellism"><span class="nav-number">1.</span> <span class="nav-text">并发(concurrency)和并行(parallellism)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Go-的-CSP-并发模型"><span class="nav-number">2.</span> <span class="nav-text">Go 的 CSP 并发模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Go-并发模型的实现原理"><span class="nav-number">3.</span> <span class="nav-text">Go 并发模型的实现原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#用户级线程模型"><span class="nav-number">3.1.</span> <span class="nav-text">用户级线程模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#内核级线程模型"><span class="nav-number">3.2.</span> <span class="nav-text">内核级线程模型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#两级线程模型"><span class="nav-number">3.3.</span> <span class="nav-text">两级线程模型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Go-线程实现模型-MPG"><span class="nav-number">4.</span> <span class="nav-text">Go 线程实现模型 MPG</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献："><span class="nav-number">5.</span> <span class="nav-text">参考文献：</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付四凯</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/blog/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/blog/js/utils.js?v=7.1.2"></script>
+
+  <script src="/blog/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/blog/js/affix.js?v=7.1.2"></script>
+
+  <script src="/blog/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/blog/js/scrollspy.js?v=7.1.2"></script>
+<script src="/blog/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/blog/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/blog/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log('Failed to save Visitor num, with error message: ' + responseJSON.error);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log('LeanCloud Counter Error: ' + responseJSON.code + ' ' + responseJSON.error);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz',
+                'X-LC-Key': 'Vfku3wPjnVYyHe33mjB6bJXY',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

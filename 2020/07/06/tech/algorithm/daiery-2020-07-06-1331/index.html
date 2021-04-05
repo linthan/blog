@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/blog/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/blog/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/blog/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/blog/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="在分布式系统中，通常会用到分布式 ID 来标注数据的唯一性，而分布式 ID 的生成方式又多种多样，今天我们就来讨论一下主流的分布式 ID 生成策略。">
+<meta name="keywords" content="技术,算法,面试">
+<meta property="og:type" content="article">
+<meta property="og:title" content="图解各路分布式ID生成算法">
+<meta property="og:url" content="http://linthan.github.io/blog/2020/07/06/tech/algorithm/daiery-2020-07-06-1331/index.html">
+<meta property="og:site_name" content="付四凯的博客">
+<meta property="og:description" content="在分布式系统中，通常会用到分布式 ID 来标注数据的唯一性，而分布式 ID 的生成方式又多种多样，今天我们就来讨论一下主流的分布式 ID 生成策略。">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/mysql1.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/mysql2.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/redis1.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/redis2.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/uuid1.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/uuid3.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/uuid2.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/snowflake.jpeg">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/snowflake1.png">
+<meta property="og:updated_time" content="2020-07-06T05:56:35.150Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="图解各路分布式ID生成算法">
+<meta name="twitter:description" content="在分布式系统中，通常会用到分布式 ID 来标注数据的唯一性，而分布式 ID 的生成方式又多种多样，今天我们就来讨论一下主流的分布式 ID 生成策略。">
+<meta name="twitter:image" content="http://linthan.github.io/blog/assets/algorithm/mysql1.png">
+
+
+
+  <link rel="alternate" href="/blog/atom.xml" title="付四凯的博客" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://linthan.github.io/blog/2020/07/06/tech/algorithm/daiery-2020-07-06-1331/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>图解各路分布式ID生成算法 | 付四凯的博客</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/blog/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">付四凯的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <h1 class="site-subtitle" itemprop="description">双手合十，潜心修炼</h1>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags<span class="badge">12</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">0</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">37</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://linthan.github.io/blog/blog/2020/07/06/tech/algorithm/daiery-2020-07-06-1331/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付四凯">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="付四凯的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">图解各路分布式ID生成算法
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-07-06 13:31:00" itemprop="dateCreated datePublished" datetime="2020-07-06T13:31:00+08:00">2020-07-06</time>
+            
+
+            
+          </span>
+
+          
+
+          
+            
+            
+          
+
+          
+          
+            <span id="/blog/2020/07/06/tech/algorithm/daiery-2020-07-06-1331/" class="leancloud_visitors" data-flag-title="图解各路分布式ID生成算法">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Views: </span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>在分布式系统中，通常会用到分布式 ID 来标注数据的唯一性，而分布式 ID 的生成方式又多种多样，今天我们就来讨论一下主流的分布式 ID 生成策略。</p>
+<a id="more"></a>
+<h2 id="分布式-ID-基本需求"><a href="#分布式-ID-基本需求" class="headerlink" title="分布式 ID 基本需求"></a>分布式 ID 基本需求</h2><ul>
+<li>全局唯一</li>
+<li>趋势递增</li>
+<li>信息安全</li>
+</ul>
+<h3 id="全局唯一"><a href="#全局唯一" class="headerlink" title="全局唯一"></a>全局唯一</h3><p>这是基本要求，不必解释</p>
+<h3 id="趋势递增"><a href="#趋势递增" class="headerlink" title="趋势递增"></a>趋势递增</h3><p>为什么要趋势递增呢？<br>第一，由于我们的分布式 ID，是用来标识数据唯一性的，所以多数时候会被定义为主键或者唯一索引。<br>第二，并且绝大多数互联网公司使用的数据库是：MySQL，存储引擎为 innoDB。<br>对于 B + Tree 这个数据结构来讲，数据以自增顺序来写入的话，b+tree 的结构不会时常被打乱重塑，存取效率是最高的。</p>
+<h3 id="信息安全"><a href="#信息安全" class="headerlink" title="信息安全"></a>信息安全</h3><p>由于数据是递增的，所以，恶意用户的可以根据当前 ID 推测出下一个，非常危险，所以，我们的分布式 ID 尽量做到不易被破解。</p>
+<h2 id="数据库主键自增-Flicker"><a href="#数据库主键自增-Flicker" class="headerlink" title="数据库主键自增(Flicker)"></a>数据库主键自增(Flicker)</h2><p>基于数据库主键自增的方案，名为 Flicker。<br>主要是利用 MySQL 的自增主键来实现分布式 ID。</p>
+<p>以下为 Flicker 实现分布式 ID 的主流做法：</p>
+<h3 id="1、需要单独建立一个数据库实例：flicker"><a href="#1、需要单独建立一个数据库实例：flicker" class="headerlink" title="1、需要单独建立一个数据库实例：flicker"></a>1、需要单独建立一个数据库实例：flicker</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> <span class="string">`flicker`</span>;</span><br></pre></td></tr></table></figure>
+<p>2、创建一张表：sequence_id</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> sequence_id(</span><br><span class="line">    <span class="keyword">id</span> <span class="built_in">bigint</span>(<span class="number">20</span>) <span class="keyword">unsigned</span> <span class="keyword">NOT</span> <span class="literal">NULL</span> auto_increment,</span><br><span class="line">    stub <span class="built_in">char</span>(<span class="number">10</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span> <span class="keyword">default</span> <span class="string">''</span>,</span><br><span class="line">    PRIMARY <span class="keyword">KEY</span> (<span class="keyword">id</span>),</span><br><span class="line">    <span class="keyword">UNIQUE</span> <span class="keyword">KEY</span> stub (stub)</span><br><span class="line">) <span class="keyword">ENGINE</span>=MyISAM;</span><br></pre></td></tr></table></figure>
+<p>为什么用 MyISAM？不用 InnoDB？个人推测原因是：flicker 算法出来的时候，MySQL 的默认引擎还依旧是 MyISAM 而不是 InnoDB，作者只是想用默认引擎而已，并无其他原因。</p>
+<p>3、使用以下 SQL 来获取 ID</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">REPLACE</span> <span class="keyword">INTO</span> ticket_center (stub) <span class="keyword">VALUES</span> (<span class="string">'test'</span>);</span><br><span class="line"><span class="keyword">SELECT</span> <span class="keyword">LAST_INSERT_ID</span>();</span><br></pre></td></tr></table></figure>
+<p>Replace into 先尝试插入数据到表中，如果发现表中已经有此行数据（根据主键或者唯一索引判断）则先删除此行数据，然后插入新的数据， 否则直接插入新数据。<br>一般 stub 为特殊的相同的值。</p>
+<p>这样，一个分布式 ID 系统算是可以搭建运行了。但是，有人要问：“这是一个单实例、单点的系统，万一挂了，岂不是影响所有关联的业务方？”</p>
+<h3 id="改进升华"><a href="#改进升华" class="headerlink" title="改进升华"></a>改进升华</h3><p>是的。确实如此，因此又有人说：“可以利用 MySQL 主从模式，主库挂了，使用从库。”<br>这只能算是一种比较 low 的策略，因为如果主库挂了，从库没来得及同步，就会生成重复的 ID。<br>有没有更好的方法呢？<br>我们可以使用“双主模式“，也就是有两个 MySQL 实例，这两个都能生成 ID。<br>如图所示，我们原来的模式：<br><img src="/blog/assets/algorithm/mysql1.png" alt="mysql1"></p>
+<h3 id="奇数那一台："><a href="#奇数那一台：" class="headerlink" title="奇数那一台："></a>奇数那一台：</h3><p>set @@auto_increment_offset = 1; – 起始值<br>set @@auto_increment_increment = 2; – 步长</p>
+<h3 id="偶数那一台："><a href="#偶数那一台：" class="headerlink" title="偶数那一台："></a>偶数那一台：</h3><p>set @@auto_increment_offset = 2; – 起始值<br>set @@auto_increment_increment = 2; – 步长</p>
+<p>当两台都 OK 的时候，随机取其中的一台生成 ID；若其中一台挂了，则取另外一台生成 ID。<br>如图所示：<br><img src="/blog/assets/algorithm/mysql2.png" alt="mysql2"></p>
+<p>细心会发现，N 个节点，只要起始值为 1，2，…N，然后步长为 N，就会生成各不相同的 ID。(PS:后文有推导公式)</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>优点：</p>
+<ul>
+<li>简单。充分利用了数据库自增 ID 机制，生成的 ID 有序递增。</li>
+<li><p>ID 递增<br>缺点：</p>
+</li>
+<li><p>并发量不大。</p>
+</li>
+<li>水平扩展困难，系统定义好了起始值、步长和机器台数，跑起来之后，添加额外的机器困难。</li>
+<li>安全系数低</li>
+</ul>
+<h2 id="Redis"><a href="#Redis" class="headerlink" title="Redis"></a>Redis</h2><p>Redis 为单线程的，所以操作为原子操作，利用 incrby 命令可以生成唯一的递增 ID。</p>
+<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p><img src="/blog/assets/algorithm/redis1.png" alt="redis1"><br>单机单点，吞吐不够，加集群<br><img src="/blog/assets/algorithm/redis2.png" alt="redis2"><br>假设 N 个节点，则步长为 N，节点起始值为 1，2，…… N。则三个节点生成的 ID 一定不同！<br>想想为什么？<br>以上信息条件可以转化为数学推理：<br>1 + x _ N = 2 + y _ N 且 x、y、N 都为整成数且 N 不为 1，试问等式存不存在？</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">答：</span><br><span class="line">假设存在在起始值是1的节点上叠加x次之后等于起始值为2、叠加y次的值，</span><br><span class="line">既 “1 + x * N = 2 + y * N” 等式成立</span><br><span class="line">则：</span><br><span class="line">x * N = 1 + y * N</span><br><span class="line">x * N - y * N = 1</span><br><span class="line">(x - y) * N = 1</span><br><span class="line">(x - y) = 1 / N</span><br><span class="line"></span><br><span class="line">又因为 x、y都为整成数；</span><br><span class="line">所以x - y 必为整成数；</span><br><span class="line">又因为只有N等于1的时候，1/N才为整成数；</span><br><span class="line">与条件N为1不符合，所以不存在。</span><br></pre></td></tr></table></figure>
+<p>优点</p>
+<ul>
+<li>性能显然高于基于数据库的 Flicker 方案</li>
+<li>ID 递增<br>缺点</li>
+<li>水平扩展困难</li>
+<li>Redis 集群宕机可能会产生重复的 id</li>
+<li>易破解</li>
+</ul>
+<h2 id="UUID"><a href="#UUID" class="headerlink" title="UUID"></a>UUID</h2><p>想必这个大家都熟悉。<br>UUID 是通用唯一识别码（Universally Unique Identifier）的缩写，是一种软件建构的标准，亦为开放软件基金会组织在分布式计算环境领域的一部分。</p>
+<h3 id="原理-1"><a href="#原理-1" class="headerlink" title="原理"></a>原理</h3><p><img src="/blog/assets/algorithm/uuid1.png" alt="uuid1"></p>
+<p>UUID 是由一组 32 位数的 16 进制数字所构成，是故 UUID 理论上的总数为 16^32 = 2^128，约等于 3.4 x 10^38。也就是说若每纳秒产生 1 兆个 UUID，要花 100 亿年才会将所有 UUID 用完。</p>
+<p>UUID 是利用同一时空中的所有机器都是唯一的这一规则来确保唯一性的。<br><img src="/blog/assets/algorithm/uuid3.png" alt="uuid3"></p>
+<p>具体外形为：</p>
+<p><img src="/blog/assets/algorithm/uuid2.png" alt="uuid2"></p>
+<p>通常由以下几部分组成：</p>
+<p>系统时间</p>
+<ul>
+<li>时钟序列</li>
+<li>全局唯一的 IEEE 机器识别，如网卡 MAC、机器 SN 等</li>
+<li>生成方式多种多样，业界公认的是五种，分别是 uuid1,uuid2,uuid3,uuid4,uuid5。<br>目前使用最广泛的 UUID 是微软的 GUID。</li>
+</ul>
+<p>优点</p>
+<ul>
+<li>本地生成，性能极佳。无网络消耗</li>
+<li>全局唯一<br>缺点</li>
+<li>存储麻烦。16 字节 128 位，通常以 36 长度的字符串表示，很多场景不适用</li>
+<li>通常是字符串，非自增，无序，不利于做主键。每次插入都会对 B+tree 结构进行修改</li>
+<li>破解相对困难，但是也不安全。参考”梅丽莎病毒事件，病毒作者制作的 UUID 包含 Mac 地址，被警方破解后，直接定位，抓捕归案 😝”</li>
+</ul>
+<h2 id="snowflake"><a href="#snowflake" class="headerlink" title="snowflake"></a>snowflake</h2><p>snowflake 即雪花算法，Twitter 发明的。</p>
+<h3 id="外形长这样："><a href="#外形长这样：" class="headerlink" title="外形长这样："></a>外形长这样：</h3><p><img src="/blog/assets/algorithm/snowflake.jpeg" alt="snowflake"></p>
+<ul>
+<li>41 位，用来记录毫秒的时间戳。41 位可以表示的数值范围是：0 至 2^{41}-1，减 1 是因为可表示的数值范围是从 0 开始算的，而不是 1，转化为年则是 2^{41}-1) / (1000 _ 60 _ 60 _ 24 _ 365) = 69 年。</li>
+<li>10 位，用来记录工作机器 id。最多可以部署在 2^{10} = 1024 个节点，我们可以根据具体的业务来定制具体分配的机器数量和每台机器 1 毫秒产生的 id 序号- number 数。例如可以把 10bit 分 5bit 给 IDC，分 5bit 给工作机器。这样就可以表示 32 个 IDC，每个 IDC 下可以有 32 台机器，可以将内容配置在配置文件中，服务去获取。</li>
+<li>12 位。用来表示单台机器每毫秒生成的 id 序号，12 位 bit 可以表示的最大正整数为 2^12 - 1 = 4096，若超过 4096，则重新从 0 开始。即，每台机器 1 毫秒内最多产生 4096 个 ID，足够用了。</li>
+</ul>
+<p>最后将上述 4 段 bit 通过位运算拼接起来组成 64 位 bit.<br>由于是 64 位 bit,所以完全可以用数字来表示 ID。</p>
+<p>基本是根据：</p>
+<p><img src="/blog/assets/algorithm/snowflake1.png" alt="snowflake1"></p>
+<p>优点</p>
+<ul>
+<li>ID 为数字且时间位在高位，整个 ID 都是趋势递增的。</li>
+<li>不依赖任何第三方库，完全可以自己写，且性能非常高。</li>
+<li>可根据业务定制分配 bit 位，非常灵活。得益于 10 位机器 IDbit 位。</li>
+<li>不太容易破解<br>缺点</li>
+<li>依赖机器</li>
+</ul>
+<p>总结<br>在国内也得到了比较普遍的应用，各大厂根据其基本原理，生成了自己的规则：</p>
+<ul>
+<li>百度的 uid-generator：<a href="https://github.com/baidu/uid-generator" target="_blank" rel="noopener">https://github.com/baidu/uid-generator</a></li>
+<li>美团 Leaf：<a href="https://github.com/zhuzhong/idleaf" target="_blank" rel="noopener">https://github.com/zhuzhong/idleaf</a></li>
+</ul>
+<h2 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a>参考文献：</h2><p>[flicker 算法原文] <a href="http://code.flickr.com/blog/2010/02/08/ticket-servers-distributed-unique-primary-keys-on-the-cheap/" target="_blank" rel="noopener">http://code.flickr.com/blog/2010/02/08/ticket-servers-distributed-unique-primary-keys-on-the-cheap/</a></p>
+<p>[分布式唯一 ID 极简教程] <a href="https://mp.weixin.qq.com/s/cqIK5Bv1U0mT97C7EOxmnA" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/cqIK5Bv1U0mT97C7EOxmnA</a></p>
+<p>[分布式 ID 生成策略] <a href="https://mp.weixin.qq.com/s/UAvSUDFJ8Fr0a-Na2Vr22g" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/UAvSUDFJ8Fr0a-Na2Vr22g</a></p>
+<p>[分布式 ID 系列（2）——UUID 适合做分布式 ID 吗] <a href="https://mp.weixin.qq.com/s/kZAnYz_Jj4aBrtsk8Q9w_A" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/kZAnYz_Jj4aBrtsk8Q9w_A</a></p>
+<p><a href="https://segmentfault.com/a/1190000011282426" target="_blank" rel="noopener">https://segmentfault.com/a/1190000011282426</a></p>
+<p><a href="https://juejin.im/post/5d6fc8eff265da03ef7a324b#comment" target="_blank" rel="noopener">https://juejin.im/post/5d6fc8eff265da03ef7a324b#comment</a></p>
+<p><a href="https://segmentfault.com/a/1190000010978305" target="_blank" rel="noopener">https://segmentfault.com/a/1190000010978305</a></p>
+<p>[Leaf——美团点评分布式 ID 生成系统] <a href="https://tech.meituan.com/2017/04/21/mt-leaf.html" target="_blank" rel="noopener">https://tech.meituan.com/2017/04/21/mt-leaf.html</a></p>
+<p>[UUID 的含义及实现原理]<a href="https://blog.csdn.net/reggergdsg/article/details/92091404" target="_blank" rel="noopener">https://blog.csdn.net/reggergdsg/article/details/92091404</a></p>
+<p>[通用唯一标识码 UUID 的介绍及使用] <a href="https://mp.weixin.qq.com/s/BjCL076USuhLj9GjhXDaTA" target="_blank" rel="noopener">https://mp.weixin.qq.com/s/BjCL076USuhLj9GjhXDaTA</a><br>[UUID 简史] <a href="https://www.infoq.cn/article/talk-about-the-history-of-uuid/?utm_source=tuicool&amp;utm_medium=referral" target="_blank" rel="noopener">https://www.infoq.cn/article/talk-about-the-history-of-uuid/?utm_source=tuicool&amp;utm_medium=referral</a></p>
+
+      
+    </div>
+
+    
+      
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>付四凯</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://linthan.github.io/blog/2020/07/06/tech/algorithm/daiery-2020-07-06-1331/" title="图解各路分布式ID生成算法">http://linthan.github.io/blog/2020/07/06/tech/algorithm/daiery-2020-07-06-1331/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/blog/tags/技术/" rel="tag"><i class="fa fa-tag"></i> 技术</a>
+          
+            <a href="/blog/tags/算法/" rel="tag"><i class="fa fa-tag"></i> 算法</a>
+          
+            <a href="/blog/tags/面试/" rel="tag"><i class="fa fa-tag"></i> 面试</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/blog/2020/07/06/tech/golang/daiery-2020-0706-1300/" rel="next" title="Golang 垃圾回收剖析">
+                <i class="fa fa-chevron-left"></i> Golang 垃圾回收剖析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/blog/2020/07/07/tech/interview/daiery-2020-0707-1536/" rel="prev" title="2020 腾讯社招Golang后端面试经验分享">
+                2020 腾讯社招Golang后端面试经验分享 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg" alt="付四凯">
+            
+              <p class="site-author-name" itemprop="name">付四凯</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/blog/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/blog/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#分布式-ID-基本需求"><span class="nav-number">1.</span> <span class="nav-text">分布式 ID 基本需求</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#全局唯一"><span class="nav-number">1.1.</span> <span class="nav-text">全局唯一</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#趋势递增"><span class="nav-number">1.2.</span> <span class="nav-text">趋势递增</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#信息安全"><span class="nav-number">1.3.</span> <span class="nav-text">信息安全</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#数据库主键自增-Flicker"><span class="nav-number">2.</span> <span class="nav-text">数据库主键自增(Flicker)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1、需要单独建立一个数据库实例：flicker"><span class="nav-number">2.1.</span> <span class="nav-text">1、需要单独建立一个数据库实例：flicker</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#改进升华"><span class="nav-number">2.2.</span> <span class="nav-text">改进升华</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#奇数那一台："><span class="nav-number">2.3.</span> <span class="nav-text">奇数那一台：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#偶数那一台："><span class="nav-number">2.4.</span> <span class="nav-text">偶数那一台：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">2.5.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis"><span class="nav-number">3.</span> <span class="nav-text">Redis</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#原理"><span class="nav-number">3.1.</span> <span class="nav-text">原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#UUID"><span class="nav-number">4.</span> <span class="nav-text">UUID</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#原理-1"><span class="nav-number">4.1.</span> <span class="nav-text">原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#snowflake"><span class="nav-number">5.</span> <span class="nav-text">snowflake</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#外形长这样："><span class="nav-number">5.1.</span> <span class="nav-text">外形长这样：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献："><span class="nav-number">6.</span> <span class="nav-text">参考文献：</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付四凯</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/blog/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/blog/js/utils.js?v=7.1.2"></script>
+
+  <script src="/blog/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/blog/js/affix.js?v=7.1.2"></script>
+
+  <script src="/blog/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/blog/js/scrollspy.js?v=7.1.2"></script>
+<script src="/blog/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/blog/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/blog/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log('Failed to save Visitor num, with error message: ' + responseJSON.error);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log('LeanCloud Counter Error: ' + responseJSON.code + ' ' + responseJSON.error);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz',
+                'X-LC-Key': 'Vfku3wPjnVYyHe33mjB6bJXY',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

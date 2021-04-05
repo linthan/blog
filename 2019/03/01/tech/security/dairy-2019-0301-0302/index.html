@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/blog/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/blog/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/blog/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/blog/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="使用场景先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，包括付费皮肤,书籍,本地游戏特效等等。 具体实践背景知识 base64 编码 【中文】 base64 编码 【english】 md5 加密 【english】 md5 加密【中文】">
+<meta name="keywords" content="技术,安全">
+<meta property="og:type" content="article">
+<meta property="og:title" content="接口加密鉴权">
+<meta property="og:url" content="http://linthan.github.io/blog/2019/03/01/tech/security/dairy-2019-0301-0302/index.html">
+<meta property="og:site_name" content="付四凯的博客">
+<meta property="og:description" content="使用场景先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，包括付费皮肤,书籍,本地游戏特效等等。 具体实践背景知识 base64 编码 【中文】 base64 编码 【english】 md5 加密 【english】 md5 加密【中文】">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/blogImg/security/dairy-20190301.png">
+<meta property="og:updated_time" content="2020-06-19T08:02:00.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="接口加密鉴权">
+<meta name="twitter:description" content="使用场景先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，包括付费皮肤,书籍,本地游戏特效等等。 具体实践背景知识 base64 编码 【中文】 base64 编码 【english】 md5 加密 【english】 md5 加密【中文】">
+<meta name="twitter:image" content="http://linthan.github.io/blog/assets/blogImg/security/dairy-20190301.png">
+
+
+
+  <link rel="alternate" href="/blog/atom.xml" title="付四凯的博客" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://linthan.github.io/blog/2019/03/01/tech/security/dairy-2019-0301-0302/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>接口加密鉴权 | 付四凯的博客</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/blog/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">付四凯的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <h1 class="site-subtitle" itemprop="description">双手合十，潜心修炼</h1>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags<span class="badge">12</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">0</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">37</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://linthan.github.io/blog/blog/2019/03/01/tech/security/dairy-2019-0301-0302/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付四凯">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="付四凯的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">接口加密鉴权
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-01 10:36:00" itemprop="dateCreated datePublished" datetime="2019-03-01T10:36:00+08:00">2019-03-01</time>
+            
+
+            
+          </span>
+
+          
+
+          
+            
+            
+          
+
+          
+          
+            <span id="/blog/2019/03/01/tech/security/dairy-2019-0301-0302/" class="leancloud_visitors" data-flag-title="接口加密鉴权">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Views: </span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h2><p>先抽象的描述一下使用场景吧。客户端请求服务端获取系统资源的时候，会存在接口劫持篡改发回服务的数据。于是客户端就可以获取付费的本地使用特效，<br>包括付费皮肤,书籍,本地游戏特效等等。</p>
+<h2 id="具体实践"><a href="#具体实践" class="headerlink" title="具体实践"></a>具体实践</h2><h3 id="背景知识"><a href="#背景知识" class="headerlink" title="背景知识"></a>背景知识</h3><ul>
+<li><a href="https://baike.baidu.com/item/base64/8545775?fr=aladdin" title="base64 编码" target="_blank" rel="noopener">base64 编码 【中文】</a></li>
+<li><a href="https://en.wikipedia.org/wiki/Base64" title="base64 编码" target="_blank" rel="noopener">base64 编码 【english】</a></li>
+<li><a href="https://en.wikipedia.org/wiki/MD5" title="md5 加密" target="_blank" rel="noopener">md5 加密 【english】</a></li>
+<li><a href="https://baike.baidu.com/item/MD5/212708?fr=aladdin" title="md5 加密" target="_blank" rel="noopener">md5 加密【中文】</a><a id="more"></a>
+</li>
+</ul>
+<h3 id="具体使用场景"><a href="#具体使用场景" class="headerlink" title="具体使用场景"></a>具体使用场景</h3><p>app 客户端推出了一个一键换肤的功能,考虑到这个换肤的功能后期会存在付费的功能,还可能会计算挂钩的收益结算，需要的皮肤这种资源进行保护。<br>如果不进行保护的话会存在如下风险。</p>
+<ul>
+<li>用户通过篡改接口来更换皮肤包资源可以自己随意定制皮肤包。如果教程公布到网上，这样第三方的山寨皮肤包就会盛行。绕过审核，产生抹黑公司形象和难以想象的法律风险。</li>
+<li>用户只要懂得抓包和接口劫持篡改的知识，就可以将网上流传的付费皮肤包资源篡改到付费皮肤包的网络请求中去。达到免费使用付费皮肤的目的。</li>
+</ul>
+<h3 id="具体操作方法"><a href="#具体操作方法" class="headerlink" title="具体操作方法"></a>具体操作方法</h3><p><strong>问题：</strong> 客户端需要相信接口下发的数据是真实的，接口端的数据不能被篡改，一旦被篡改客户端可以感知的到。</p>
+<p><strong>思路：</strong> 客户端传一个随机字符串给服务端，服务端接受到请求后再参数一个随机字符串，根据这两个字符串加上需要返回的数据再加上约定要的秘钥 key 生成一个签名<br>然后将这个签名和服务端的随机数和需要传递的数据传递客户端，客户端根据这些数据来校验这个签名是否合法。</p>
+<p><strong>代码 demo</strong>:<a href="https://github.com/linthan/encryptapi-demo" title="demo" target="_blank" rel="noopener">点我</a></p>
+<h4 id="备注"><a href="#备注" class="headerlink" title="备注"></a>备注</h4><p>返回的数据一般是 json 格式的数据，计算签名的时候需要使用 json 格式数据的字符串，经过 base64 编码以后的字符串来计算 sign。传递数据给客户端的数据是这个 base64 编码字符串。<br><strong>理由如下：</strong><br>实际操作中会存在服务端 json 字符串和客户端 json 字符串经过网络传输以后数据不一致的情况,计算的 sign 会不一致。直接使用 json 字符串，还有不必要的字符串转义的烦恼。</p>
+<h4 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h4><p><img src="/blog/assets/blogImg/security/dairy-20190301.png" alt></p>
+<h4 id="接口格式"><a href="#接口格式" class="headerlink" title="接口格式"></a>接口格式</h4><p><strong>请求参数</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>字段解释</th>
+<th>字段类型</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>id</td>
+<td>int</td>
+<td>0</td>
+<td>大于 0</td>
+</tr>
+<tr>
+<td>ver</td>
+<td>版本</td>
+<td>int</td>
+<td>0</td>
+<td>大于 0</td>
+</tr>
+<tr>
+<td>r</td>
+<td>随机字符串</td>
+<td>string</td>
+<td>“”</td>
+<td>长度 16</td>
+</tr>
+</tbody>
+</table>
+<p><strong>返回格式</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &quot;error&quot;: 0, // 一直为0</span><br><span class="line">    &quot;msg&quot;: &quot;ok&quot;,</span><br><span class="line">    &quot;data&quot;: &#123;</span><br><span class="line">    	&quot;e&quot;: 0, // 真实error值</span><br><span class="line">        &quot;r&quot;: &quot;uk!cntZs)qk+t&amp;gF&quot;,	// 随机字符串</span><br><span class="line">        &quot;s&quot;: &quot;3eee660f7728b411a96b9a14cd8d2be6&quot;, // 签名</span><br><span class="line">        &quot;data&quot;: &quot;base64 字符串&quot;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+      
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>付四凯</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://linthan.github.io/blog/2019/03/01/tech/security/dairy-2019-0301-0302/" title="接口加密鉴权">http://linthan.github.io/blog/2019/03/01/tech/security/dairy-2019-0301-0302/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/blog/tags/技术/" rel="tag"><i class="fa fa-tag"></i> 技术</a>
+          
+            <a href="/blog/tags/安全/" rel="tag"><i class="fa fa-tag"></i> 安全</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/blog/2019/01/26/xinqing/dairy-2019-0226-0302/" rel="next" title="潜心下来，考虑未来">
+                <i class="fa fa-chevron-left"></i> 潜心下来，考虑未来
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/blog/2019/04/02/xinqing/dairy-2019-0401-0402/" rel="prev" title="好好学习天天向上">
+                好好学习天天向上 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg" alt="付四凯">
+            
+              <p class="site-author-name" itemprop="name">付四凯</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/blog/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/blog/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#使用场景"><span class="nav-number">1.</span> <span class="nav-text">使用场景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#具体实践"><span class="nav-number">2.</span> <span class="nav-text">具体实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景知识"><span class="nav-number">2.1.</span> <span class="nav-text">背景知识</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#具体使用场景"><span class="nav-number">2.2.</span> <span class="nav-text">具体使用场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#具体操作方法"><span class="nav-number">2.3.</span> <span class="nav-text">具体操作方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#备注"><span class="nav-number">2.3.1.</span> <span class="nav-text">备注</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#流程图"><span class="nav-number">2.3.2.</span> <span class="nav-text">流程图</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#接口格式"><span class="nav-number">2.3.3.</span> <span class="nav-text">接口格式</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付四凯</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/blog/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/blog/js/utils.js?v=7.1.2"></script>
+
+  <script src="/blog/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/blog/js/affix.js?v=7.1.2"></script>
+
+  <script src="/blog/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/blog/js/scrollspy.js?v=7.1.2"></script>
+<script src="/blog/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/blog/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/blog/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log('Failed to save Visitor num, with error message: ' + responseJSON.error);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log('LeanCloud Counter Error: ' + responseJSON.code + ' ' + responseJSON.error);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz',
+                'X-LC-Key': 'Vfku3wPjnVYyHe33mjB6bJXY',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

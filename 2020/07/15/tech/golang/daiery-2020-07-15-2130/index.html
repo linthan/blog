@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/blog/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/blog/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/blog/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/blog/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="简介Context 是一个在 go 中经常用到的程序包，谷歌官方开发。特别常见的一个应用场景是有一个请求衍生出来的各个 goroutine 之间需要满足一定的约束条件，以实现一些诸如有效期、终止 routline 树、传递请求全局变量之类的功能。使用 Context 实现上下文功能约定需要在你的方法中传入参数的第一个传入 context.Context 类型的变量，我们将通过源码的阅读和一些示例代">
+<meta name="keywords" content="技术,golang">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GoLang Context包详解">
+<meta property="og:url" content="http://linthan.github.io/blog/2020/07/15/tech/golang/daiery-2020-07-15-2130/index.html">
+<meta property="og:site_name" content="付四凯的博客">
+<meta property="og:description" content="简介Context 是一个在 go 中经常用到的程序包，谷歌官方开发。特别常见的一个应用场景是有一个请求衍生出来的各个 goroutine 之间需要满足一定的约束条件，以实现一些诸如有效期、终止 routline 树、传递请求全局变量之类的功能。使用 Context 实现上下文功能约定需要在你的方法中传入参数的第一个传入 context.Context 类型的变量，我们将通过源码的阅读和一些示例代">
+<meta property="og:locale" content="en">
+<meta property="og:updated_time" content="2020-07-15T14:06:50.053Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="GoLang Context包详解">
+<meta name="twitter:description" content="简介Context 是一个在 go 中经常用到的程序包，谷歌官方开发。特别常见的一个应用场景是有一个请求衍生出来的各个 goroutine 之间需要满足一定的约束条件，以实现一些诸如有效期、终止 routline 树、传递请求全局变量之类的功能。使用 Context 实现上下文功能约定需要在你的方法中传入参数的第一个传入 context.Context 类型的变量，我们将通过源码的阅读和一些示例代">
+
+
+
+  <link rel="alternate" href="/blog/atom.xml" title="付四凯的博客" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://linthan.github.io/blog/2020/07/15/tech/golang/daiery-2020-07-15-2130/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>GoLang Context包详解 | 付四凯的博客</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/blog/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">付四凯的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <h1 class="site-subtitle" itemprop="description">双手合十，潜心修炼</h1>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags<span class="badge">12</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">0</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">37</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://linthan.github.io/blog/blog/2020/07/15/tech/golang/daiery-2020-07-15-2130/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付四凯">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="付四凯的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">GoLang Context包详解
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-07-15 21:30:00" itemprop="dateCreated datePublished" datetime="2020-07-15T21:30:00+08:00">2020-07-15</time>
+            
+
+            
+          </span>
+
+          
+
+          
+            
+            
+          
+
+          
+          
+            <span id="/blog/2020/07/15/tech/golang/daiery-2020-07-15-2130/" class="leancloud_visitors" data-flag-title="GoLang Context包详解">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Views: </span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>Context 是一个在 go 中经常用到的程序包，谷歌官方开发。特别常见的一个应用场景是有一个请求衍生出来的各个 goroutine 之间需要满足一定的约束条件，以实现一些诸如有效期、终止 routline 树、传递请求全局变量之类的功能。使用 Context 实现上下文功能约定需要在你的方法中传入参数的第一个传入 context.Context 类型的变量，我们将通过源码的阅读和一些示例代码来说明 context 的用法。</p>
+<a id="more"></a>
+<h2 id="核心接口"><a href="#核心接口" class="headerlink" title="核心接口"></a>核心接口</h2><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Context <span class="keyword">interface</span> &#123;</span><br><span class="line">    Deadline() (deadline time.Time, ok <span class="keyword">bool</span>)</span><br><span class="line">    Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line">    Err() error</span><br><span class="line">    Value(key <span class="keyword">interface</span>&#123;&#125;) <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>默认错误：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> Canceled = errors.New(<span class="string">"context canceled"</span>)</span><br><span class="line"><span class="keyword">var</span> DeadlineExceeded error = deadlineExceededError&#123;&#125;</span><br><span class="line"><span class="keyword">type</span> deadlineExceededError <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(deadlineExceededError)</span> <span class="title">Error</span><span class="params">()</span> <span class="title">string</span></span>   &#123; <span class="keyword">return</span> <span class="string">"context deadline exceeded"</span> &#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(deadlineExceededError)</span> <span class="title">Timeout</span><span class="params">()</span> <span class="title">bool</span></span>   &#123; <span class="keyword">return</span> <span class="literal">true</span> &#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(deadlineExceededError)</span> <span class="title">Temporary</span><span class="params">()</span> <span class="title">bool</span></span> &#123; <span class="keyword">return</span> <span class="literal">true</span> &#125;</span><br></pre></td></tr></table></figure>
+<p>空 Context</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// An emptyCtx is never canceled, has no values, and has no deadline. It is not</span></span><br><span class="line"><span class="comment">// struct&#123;&#125;, since vars of this type must have distinct addresses.</span></span><br><span class="line"><span class="keyword">type</span> emptyCtx <span class="keyword">int</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(*emptyCtx)</span> <span class="title">Deadline</span><span class="params">()</span> <span class="params">(deadline time.Time, ok <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(*emptyCtx)</span> <span class="title">Done</span><span class="params">()</span> &lt;-<span class="title">chan</span> <span class="title">struct</span></span>&#123;&#125; &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(*emptyCtx)</span> <span class="title">Err</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(*emptyCtx)</span> <span class="title">Value</span><span class="params">(key <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e *emptyCtx)</span> <span class="title">String</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">    <span class="keyword">switch</span> e &#123;</span><br><span class="line">    <span class="keyword">case</span> background:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"context.Background"</span></span><br><span class="line">    <span class="keyword">case</span> todo:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">"context.TODO"</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">"unknown empty Context"</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>源码包中提供了两个空 Context</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> (</span><br><span class="line">    background = <span class="built_in">new</span>(emptyCtx)</span><br><span class="line">    todo       = <span class="built_in">new</span>(emptyCtx)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Background returns a non-nil, empty Context. It is never canceled, has no</span></span><br><span class="line"><span class="comment">// values, and has no deadline. It is typically used by the main function,</span></span><br><span class="line"><span class="comment">// initialization, and tests, and as the top-level Context for incoming</span></span><br><span class="line"><span class="comment">// requests.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Background</span><span class="params">()</span> <span class="title">Context</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> background</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// TODO returns a non-nil, empty Context. Code should use context.TODO when</span></span><br><span class="line"><span class="comment">// it's unclear which Context to use or it is not yet available (because the</span></span><br><span class="line"><span class="comment">// surrounding function has not yet been extended to accept a Context</span></span><br><span class="line"><span class="comment">// parameter). TODO is recognized by static analysis tools that determine</span></span><br><span class="line"><span class="comment">// whether Contexts are propagated correctly in a program.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">TODO</span><span class="params">()</span> <span class="title">Context</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> todo</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="canceler"><a href="#canceler" class="headerlink" title="canceler"></a>canceler</h2><p>cancelCtx 结构体继承了 Context，实现了 canceler 方法：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//*cancelCtx 和 *timerCtx都实现了canceler接口，实现该接口的类型都可以直接被cancel</span></span><br><span class="line"><span class="comment">// A canceler is a context type that can be canceled directly. The</span></span><br><span class="line"><span class="comment">// implementations are *cancelCtx and *timerCtx.</span></span><br><span class="line"><span class="keyword">type</span> canceler <span class="keyword">interface</span> &#123;</span><br><span class="line">    cancel(removeFromParent <span class="keyword">bool</span>, err error)</span><br><span class="line">    Done() &lt;-<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// A cancelCtx can be canceled. When canceled, it also cancels any children</span></span><br><span class="line"><span class="comment">// that implement canceler.</span></span><br><span class="line"><span class="keyword">type</span> cancelCtx <span class="keyword">struct</span> &#123;</span><br><span class="line">    Context</span><br><span class="line"></span><br><span class="line">    done <span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125; <span class="comment">// closed by the first cancel call.</span></span><br><span class="line"></span><br><span class="line">    mu       sync.Mutex</span><br><span class="line">    children <span class="keyword">map</span>[canceler]<span class="keyword">struct</span>&#123;&#125; <span class="comment">// set to nil by the first cancel call</span></span><br><span class="line">    err      error                 <span class="comment">// set to non-nil by the first cancel call</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *cancelCtx)</span> <span class="title">Done</span><span class="params">()</span> &lt;-<span class="title">chan</span> <span class="title">struct</span></span>&#123;&#125; &#123;</span><br><span class="line">    <span class="keyword">return</span> c.done</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *cancelCtx)</span> <span class="title">Err</span><span class="params">()</span> <span class="title">error</span></span> &#123;</span><br><span class="line">    c.mu.Lock()</span><br><span class="line">    <span class="keyword">defer</span> c.mu.Unlock()</span><br><span class="line">    <span class="keyword">return</span> c.err</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *cancelCtx)</span> <span class="title">String</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Sprintf(<span class="string">"%v.WithCancel"</span>, c.Context)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//核心是关闭c.done</span></span><br><span class="line"><span class="comment">//同时会设置c.err = err, c.children = nil</span></span><br><span class="line"><span class="comment">//依次遍历c.children，每个child分别cancel</span></span><br><span class="line"><span class="comment">//如果设置了removeFromParent，则将c从其parent的children中删除</span></span><br><span class="line"><span class="comment">// cancel closes c.done, cancels each of c's children, and, if</span></span><br><span class="line"><span class="comment">// removeFromParent is true, removes c from its parent's children.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *cancelCtx)</span> <span class="title">cancel</span><span class="params">(removeFromParent <span class="keyword">bool</span>, err error)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> err == <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="built_in">panic</span>(<span class="string">"context: internal error: missing cancel error"</span>)</span><br><span class="line">    &#125;</span><br><span class="line">    c.mu.Lock()</span><br><span class="line">    <span class="keyword">if</span> c.err != <span class="literal">nil</span> &#123;</span><br><span class="line">        c.mu.Unlock()</span><br><span class="line">        <span class="keyword">return</span> <span class="comment">// already canceled</span></span><br><span class="line">    &#125;</span><br><span class="line">    c.err = err</span><br><span class="line">    <span class="built_in">close</span>(c.done)</span><br><span class="line">    <span class="keyword">for</span> child := <span class="keyword">range</span> c.children &#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">NOTE:</span> acquiring the child's lock while holding parent's lock.</span></span><br><span class="line">        child.cancel(<span class="literal">false</span>, err)</span><br><span class="line">    &#125;</span><br><span class="line">    c.children = <span class="literal">nil</span></span><br><span class="line">    c.mu.Unlock()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> removeFromParent &#123;</span><br><span class="line">        removeChild(c.Context, c)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再来看一些 cancel 相关的方法：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> CancelFunc <span class="function"><span class="keyword">func</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">// <span class="title">WithCancel</span>方法返回一个继承自<span class="title">parent</span>的<span class="title">Context</span>对象，同时返回的<span class="title">cancel</span>方法可以用来关闭返回的<span class="title">Context</span>当中的<span class="title">Done</span> <span class="title">channel</span></span></span><br><span class="line"><span class="function">// 其将新建立的节点挂载在最近的可以被<span class="title">cancel</span>的父节点下（向下方向）</span></span><br><span class="line"><span class="function">// 如果传入的<span class="title">parent</span>是不可被<span class="title">cancel</span>的节点，则直接只保留向上关系</span></span><br><span class="line"><span class="function"><span class="title">func</span> <span class="title">WithCancel</span><span class="params">(parent Context)</span> <span class="params">(ctx Context, cancel CancelFunc)</span></span> &#123;</span><br><span class="line">    c := newCancelCtx(parent)</span><br><span class="line">    propagateCancel(parent, &amp;c)</span><br><span class="line">    <span class="keyword">return</span> &amp;c, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; c.cancel(<span class="literal">true</span>, Canceled) &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">newCancelCtx</span><span class="params">(parent Context)</span> <span class="title">cancelCtx</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> cancelCtx&#123;</span><br><span class="line">        Context: parent,</span><br><span class="line">        done:    <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">struct</span>&#123;&#125;),</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 传递cancel</span></span><br><span class="line"><span class="comment">// 从当前传入的parent开始（包括该parent），向上查找最近的一个可以被cancel的parent</span></span><br><span class="line"><span class="comment">// 如果找到的parent已经被cancel，则将方才传入的child树给cancel掉</span></span><br><span class="line"><span class="comment">// 否则，将child节点直接连接为找到的parent的children中（Context字段不变，即向上的父亲指针不变，但是向下的孩子指针变直接了）</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// 如果没有找到最近的可以被cancel的parent，即其上都不可被cancel，则启动一个goroutine等待传入的parent终止，则cancel传入的child树，或者等待传入的child终结。</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">propagateCancel</span><span class="params">(parent Context, child canceler)</span></span> &#123;</span><br><span class="line">    <span class="keyword">if</span> parent.Done() == <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="comment">// parent is never canceled</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> p, ok := parentCancelCtx(parent); ok &#123;</span><br><span class="line">        p.mu.Lock()</span><br><span class="line">        <span class="keyword">if</span> p.err != <span class="literal">nil</span> &#123;</span><br><span class="line">            <span class="comment">// parent has already been canceled</span></span><br><span class="line">            child.cancel(<span class="literal">false</span>, p.err)</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> p.children == <span class="literal">nil</span> &#123;</span><br><span class="line">                p.children = <span class="built_in">make</span>(<span class="keyword">map</span>[canceler]<span class="keyword">bool</span>)</span><br><span class="line">            &#125;</span><br><span class="line">            p.children[child] = <span class="literal">true</span></span><br><span class="line">        &#125;</span><br><span class="line">        p.mu.Unlock()</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">            <span class="keyword">select</span> &#123;</span><br><span class="line">            <span class="keyword">case</span> &lt;-parent.Done():</span><br><span class="line">                child.cancel(<span class="literal">false</span>, parent.Err())</span><br><span class="line">            <span class="keyword">case</span> &lt;-child.Done():</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;()</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 从传入的parent对象开始，依次往上找到一个最近的可以被cancel的对象，即cancelCtx或者timerCtx</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">parentCancelCtx</span><span class="params">(parent Context)</span> <span class="params">(*cancelCtx, <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> &#123;</span><br><span class="line">        <span class="keyword">switch</span> c := parent.(<span class="keyword">type</span>) &#123;</span><br><span class="line">        <span class="keyword">case</span> *cancelCtx:</span><br><span class="line">            <span class="keyword">return</span> c, <span class="literal">true</span></span><br><span class="line">        <span class="keyword">case</span> *timerCtx:</span><br><span class="line">            <span class="keyword">return</span> &amp;c.cancelCtx, <span class="literal">true</span></span><br><span class="line">        <span class="keyword">case</span> *valueCtx:</span><br><span class="line">            parent = c.Context</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">nil</span>, <span class="literal">false</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//从parent开始往上找到最近的一个可以cancel的父对象</span></span><br><span class="line"><span class="comment">// 从父对象的children map中删除这个child</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">removeChild</span><span class="params">(parent Context, child canceler)</span></span> &#123;</span><br><span class="line">    p, ok := parentCancelCtx(parent)</span><br><span class="line">    <span class="keyword">if</span> !ok &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line">    p.mu.Lock()</span><br><span class="line">    <span class="keyword">if</span> p.children != <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="built_in">delete</span>(p.children, child)</span><br><span class="line">    &#125;</span><br><span class="line">    p.mu.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Deadline 和 TimeOut<br>首先看一个继承自 cancelCtx 的结构体：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> timerCtx <span class="keyword">struct</span> &#123;</span><br><span class="line">    cancelCtx <span class="comment">//此处的封装为了继承来自于cancelCtx的方法，cancelCtx.Context才是父亲节点的指针</span></span><br><span class="line">    timer *time.Timer <span class="comment">// Under cancelCtx.mu. 是一个计时器</span></span><br><span class="line">    deadline time.Time</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *timerCtx)</span> <span class="title">Deadline</span><span class="params">()</span> <span class="params">(deadline time.Time, ok <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> c.deadline, <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *timerCtx)</span> <span class="title">String</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Sprintf(<span class="string">"%v.WithDeadline(%s [%s])"</span>, c.cancelCtx.Context, c.deadline, c.deadline.Sub(time.Now()))</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 与cencelCtx有所不同，其除了处理cancelCtx.cancel，还回对c.timer进行Stop()，并将c.timer=nil</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *timerCtx)</span> <span class="title">cancel</span><span class="params">(removeFromParent <span class="keyword">bool</span>, err error)</span></span> &#123;</span><br><span class="line">    c.cancelCtx.cancel(<span class="literal">false</span>, err)</span><br><span class="line">    <span class="keyword">if</span> removeFromParent &#123;</span><br><span class="line">        <span class="comment">// Remove this timerCtx from its parent cancelCtx's children.</span></span><br><span class="line">        removeChild(c.cancelCtx.Context, c)</span><br><span class="line">    &#125;</span><br><span class="line">    c.mu.Lock()</span><br><span class="line">    <span class="keyword">if</span> c.timer != <span class="literal">nil</span> &#123;</span><br><span class="line">        c.timer.Stop()</span><br><span class="line">        c.timer = <span class="literal">nil</span></span><br><span class="line">    &#125;</span><br><span class="line">    c.mu.Unlock()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>由此结构体衍生出的两个方法：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithDeadline</span><span class="params">(parent Context, deadline time.Time)</span> <span class="params">(Context, CancelFunc)</span></span> &#123;</span><br><span class="line">    <span class="comment">// 如果parent的deadline比新传入的deadline已经要早，则直接WithCancel，因为新传入的deadline没有效，父亲的deadline会先到期。</span></span><br><span class="line">    <span class="keyword">if</span> cur, ok := parent.Deadline(); ok &amp;&amp; cur.Before(deadline) &#123;</span><br><span class="line">        <span class="comment">// The current deadline is already sooner than the new one.</span></span><br><span class="line">        <span class="keyword">return</span> WithCancel(parent)</span><br><span class="line">    &#125;</span><br><span class="line">    c := &amp;timerCtx&#123;</span><br><span class="line">        cancelCtx: newCancelCtx(parent),</span><br><span class="line">        deadline:  deadline,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 接入树</span></span><br><span class="line">    propagateCancel(parent, c)</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 检查如果已经过期，则cancel新的子树</span></span><br><span class="line">    d := deadline.Sub(time.Now())</span><br><span class="line">    <span class="keyword">if</span> d &lt;= <span class="number">0</span> &#123;</span><br><span class="line">        c.cancel(<span class="literal">true</span>, DeadlineExceeded) <span class="comment">// deadline has already passed</span></span><br><span class="line">        <span class="keyword">return</span> c, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; c.cancel(<span class="literal">true</span>, Canceled) &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    c.mu.Lock()</span><br><span class="line">    <span class="keyword">defer</span> c.mu.Unlock()</span><br><span class="line">    <span class="keyword">if</span> c.err == <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="comment">// 还没有被cancel的话，就设置deadline之后cancel的计时器</span></span><br><span class="line">        c.timer = time.AfterFunc(d, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">            c.cancel(<span class="literal">true</span>, DeadlineExceeded)</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> c, <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; c.cancel(<span class="literal">true</span>, Canceled) &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// timeout和deadline本质一样</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithTimeout</span><span class="params">(parent Context, timeout time.Duration)</span> <span class="params">(Context, CancelFunc)</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> WithDeadline(parent, time.Now().Add(timeout))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Value<br>valueCtx 主要用来传递一些元数据，通过 WithValue()来传入继承，通过 Value()来读取，简单，不赘述.</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">WithValue</span><span class="params">(parent Context, key <span class="keyword">interface</span>&#123;&#125;, val <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">Context</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> &amp;valueCtx&#123;parent, key, val&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">type</span> valueCtx <span class="keyword">struct</span> &#123;</span><br><span class="line">    Context</span><br><span class="line">    key, val <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *valueCtx)</span> <span class="title">String</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">    <span class="keyword">return</span> fmt.Sprintf(<span class="string">"%v.WithValue(%#v, %#v)"</span>, c.Context, c.key, c.val)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(c *valueCtx)</span> <span class="title">Value</span><span class="params">(key <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">    <span class="keyword">if</span> c.key == key &#123;</span><br><span class="line">        <span class="keyword">return</span> c.val</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> c.Context.Value(key)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="使用原则"><a href="#使用原则" class="headerlink" title="使用原则"></a>使用原则</h2><ul>
+<li>Programs that use Contexts should follow these rules to keep interfaces consistent across packages and enable static analysis tools to check context propagation:<br>使用 Context 的程序包需要遵循如下的原则来满足接口的一致性以及便于静态分析</li>
+<li>Do not store Contexts inside a struct type; instead, pass a Context explicitly to each function that needs it. The Context should be the first parameter, typically named ctx:<br>不要把 Context 存在一个结构体当中，显式地传入函数。Context 变量需要作为第一个参数使用，一般命名为 ctx</li>
+</ul>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">DoSomething</span><span class="params">(ctx context.Context, arg Arg)</span> <span class="title">error</span></span> &#123;</span><br><span class="line"> ... use ctx ...</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Do not pass a nil Context, even if a function permits it. Pass context.TODO if you are unsure about which Context to use.<br>即使方法允许，也不要传入一个 nil 的 Context，如果你不确定你要用什么 Context 的时候传一个 context.TODO</li>
+<li><p>Use context Values only for request-scoped data that transits processes and APIs, not for passing optional parameters to functions.<br>使用 context 的 Value 相关方法只应该用于在程序和接口中传递的和请求相关的元数据，不要用它来传递一些可选的参数</p>
+</li>
+<li><p>The same Context may be passed to functions running in different goroutines; Contexts are safe for simultaneous use by multiple goroutines.<br>同样的 Context 可以用来传递到不同的 goroutine 中，Context 在多个 goroutine 中是安全的</p>
+</li>
+</ul>
+<h2 id="使用要点："><a href="#使用要点：" class="headerlink" title="使用要点："></a>使用要点：</h2><p>其实本身非常简单，在导入这个包之后，初始化 Context 对象，在每个资源访问方法中都调用它，然后在使用时检查 Context 对象是否已经被 Cancel，如果是就释放绑定的资源。如下所示（下面的代码截取自<a href="http://blog.golang.org/context中的示例程序）" target="_blank" rel="noopener">http://blog.golang.org/context中的示例程序）</a><br>初始化并设置最终 cancel：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">handleSearch</span><span class="params">(w http.ResponseWriter, req *http.Request)</span></span> &#123;</span><br><span class="line">    <span class="comment">// ctx is the Context for this handler. Calling cancel closes the</span></span><br><span class="line">    <span class="comment">// ctx.Done channel, which is the cancellation signal for requests</span></span><br><span class="line">    <span class="comment">// started by this handler.</span></span><br><span class="line">    <span class="keyword">var</span> (</span><br><span class="line">        ctx    context.Context</span><br><span class="line">        cancel context.CancelFunc</span><br><span class="line">    )</span><br><span class="line">    timeout, err := time.ParseDuration(req.FormValue(<span class="string">"timeout"</span>))</span><br><span class="line">    <span class="keyword">if</span> err == <span class="literal">nil</span> &#123;</span><br><span class="line">        <span class="comment">// The request has a timeout, so create a context that is</span></span><br><span class="line">        <span class="comment">// canceled automatically when the timeout expires.</span></span><br><span class="line">        ctx, cancel = context.WithTimeout(context.Background(), timeout)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ctx, cancel = context.WithCancel(context.Background())</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">defer</span> cancel() <span class="comment">// Cancel ctx as soon as handleSearch returns.</span></span><br></pre></td></tr></table></figure>
+<p>在中间过程传递，并在资源相关操作时判断是否 ctx.Done()传出了值，关于 Done()的使用应该参考<a href="http://blog.golang.org/pipelines" target="_blank" rel="noopener">http://blog.golang.org/pipelines</a> 意外终结的程序返回值应该为对应的 ctx.Err()</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">httpDo</span><span class="params">(ctx context.Context, req *http.Request, f <span class="keyword">func</span>(*http.Response, error)</span> <span class="title">error</span>) <span class="title">error</span></span> &#123;</span><br><span class="line">    <span class="comment">// Run the HTTP request in a goroutine and pass the response to f.</span></span><br><span class="line">    tr := &amp;http.Transport&#123;&#125;</span><br><span class="line">    client := &amp;http.Client&#123;Transport: tr&#125;</span><br><span class="line">    c := <span class="built_in">make</span>(<span class="keyword">chan</span> error, <span class="number">1</span>)</span><br><span class="line">    <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123; c &lt;- f(client.Do(req)) &#125;()</span><br><span class="line">    <span class="keyword">select</span> &#123;</span><br><span class="line">    <span class="keyword">case</span> &lt;-ctx.Done():</span><br><span class="line">        tr.CancelRequest(req)</span><br><span class="line">        &lt;-c <span class="comment">// Wait for f to return.</span></span><br><span class="line">        <span class="keyword">return</span> ctx.Err()</span><br><span class="line">    <span class="keyword">case</span> err := &lt;-c:</span><br><span class="line">        <span class="keyword">return</span> err</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+      
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>付四凯</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://linthan.github.io/blog/2020/07/15/tech/golang/daiery-2020-07-15-2130/" title="GoLang Context包详解">http://linthan.github.io/blog/2020/07/15/tech/golang/daiery-2020-07-15-2130/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/blog/tags/技术/" rel="tag"><i class="fa fa-tag"></i> 技术</a>
+          
+            <a href="/blog/tags/golang/" rel="tag"><i class="fa fa-tag"></i> golang</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/blog/2020/07/10/tech/golang/daiery-2020-0710-0801/" rel="next" title="图解Go select语句原理">
+                <i class="fa fa-chevron-left"></i> 图解Go select语句原理
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/blog/2020/07/15/tech/algorithm/daiery-2020-07-15-2200/" rel="prev" title="几大排序的稳定性">
+                几大排序的稳定性 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg" alt="付四凯">
+            
+              <p class="site-author-name" itemprop="name">付四凯</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/blog/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/blog/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#简介"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#核心接口"><span class="nav-number">2.</span> <span class="nav-text">核心接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#canceler"><span class="nav-number">3.</span> <span class="nav-text">canceler</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用原则"><span class="nav-number">4.</span> <span class="nav-text">使用原则</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用要点："><span class="nav-number">5.</span> <span class="nav-text">使用要点：</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付四凯</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/blog/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/blog/js/utils.js?v=7.1.2"></script>
+
+  <script src="/blog/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/blog/js/affix.js?v=7.1.2"></script>
+
+  <script src="/blog/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/blog/js/scrollspy.js?v=7.1.2"></script>
+<script src="/blog/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/blog/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/blog/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log('Failed to save Visitor num, with error message: ' + responseJSON.error);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log('LeanCloud Counter Error: ' + responseJSON.code + ' ' + responseJSON.error);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz',
+                'X-LC-Key': 'Vfku3wPjnVYyHe33mjB6bJXY',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

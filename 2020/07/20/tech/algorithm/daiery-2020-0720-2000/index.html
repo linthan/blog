@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/blog/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/blog/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/blog/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/blog/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="一、前言在解决分布式系统中负载均衡的问题时候可以使用 Hash 算法让固定的一部分请求落到同一台服务器上，这样每台服务器固定处理一部分请求（并维护这些请求的信息），起到负载均衡的作用。 但是普通的余数 hash（hash(比如用户 id)%服务器机器数）算法伸缩性很差，当新增或者下线服务器机器时候，用户 id 与服务器的映射关系会大量失效。一致性 hash 则利用 hash 环对其进行了改进。 为">
+<meta name="keywords" content="技术,算法,面试">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入浅出一致性Hash原理">
+<meta property="og:url" content="http://linthan.github.io/blog/2020/07/20/tech/algorithm/daiery-2020-0720-2000/index.html">
+<meta property="og:site_name" content="付四凯的博客">
+<meta property="og:description" content="一、前言在解决分布式系统中负载均衡的问题时候可以使用 Hash 算法让固定的一部分请求落到同一台服务器上，这样每台服务器固定处理一部分请求（并维护这些请求的信息），起到负载均衡的作用。 但是普通的余数 hash（hash(比如用户 id)%服务器机器数）算法伸缩性很差，当新增或者下线服务器机器时候，用户 id 与服务器的映射关系会大量失效。一致性 hash 则利用 hash 环对其进行了改进。 为">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/chash.webp">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/chash1.webp">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/chash2.webp">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/chash3.webp">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/chash4.webp">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/chash5.webp">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/chash6.webp">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/algorithm/chash7.webp">
+<meta property="og:updated_time" content="2020-07-20T13:29:30.657Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="深入浅出一致性Hash原理">
+<meta name="twitter:description" content="一、前言在解决分布式系统中负载均衡的问题时候可以使用 Hash 算法让固定的一部分请求落到同一台服务器上，这样每台服务器固定处理一部分请求（并维护这些请求的信息），起到负载均衡的作用。 但是普通的余数 hash（hash(比如用户 id)%服务器机器数）算法伸缩性很差，当新增或者下线服务器机器时候，用户 id 与服务器的映射关系会大量失效。一致性 hash 则利用 hash 环对其进行了改进。 为">
+<meta name="twitter:image" content="http://linthan.github.io/blog/assets/algorithm/chash.webp">
+
+
+
+  <link rel="alternate" href="/blog/atom.xml" title="付四凯的博客" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://linthan.github.io/blog/2020/07/20/tech/algorithm/daiery-2020-0720-2000/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>深入浅出一致性Hash原理 | 付四凯的博客</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/blog/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">付四凯的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <h1 class="site-subtitle" itemprop="description">双手合十，潜心修炼</h1>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags<span class="badge">12</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">0</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">37</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://linthan.github.io/blog/blog/2020/07/20/tech/algorithm/daiery-2020-0720-2000/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付四凯">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="付四凯的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">深入浅出一致性Hash原理
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-07-20 10:00:00" itemprop="dateCreated datePublished" datetime="2020-07-20T10:00:00+08:00">2020-07-20</time>
+            
+
+            
+          </span>
+
+          
+
+          
+            
+            
+          
+
+          
+          
+            <span id="/blog/2020/07/20/tech/algorithm/daiery-2020-0720-2000/" class="leancloud_visitors" data-flag-title="深入浅出一致性Hash原理">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Views: </span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>一、前言<br>在解决分布式系统中负载均衡的问题时候可以使用 Hash 算法让固定的一部分请求落到同一台服务器上，这样每台服务器固定处理一部分请求（并维护这些请求的信息），起到负载均衡的作用。</p>
+<p>但是普通的余数 hash（hash(比如用户 id)%服务器机器数）算法伸缩性很差，当新增或者下线服务器机器时候，用户 id 与服务器的映射关系会大量失效。一致性 hash 则利用 hash 环对其进行了改进。</p>
+<p>为了能直观的理解一致性 hash 原理，这里结合一个简单的例子来讲解，假设有 4 台服务器，地址为 ip1,ip2,ip3,ip4。</p>
+<p>一致性 hash 是首先计算四个 ip 地址对应的 hash 值<br>hash(ip1),hash(ip2),hash(ip3),hash(ip3)，计算出来的 hash 值是 0~最大正整数直接的一个值，这四个值在一致性 hash 环上呈现如下图：</p>
+<p><img src="/blog/assets/algorithm/chash.webp" alt="chash"></p>
+<a id="more"></a>
+<p>hash 环上顺时针从整数 0 开始，一直到最大正整数，我们根据四个 ip 计算的 hash 值肯定会落到这个 hash 环上的某一个点，至此我们把服务器的四个 ip 映射到了一致性 hash 环</p>
+<p>当用户在客户端进行请求时候，首先根据 hash(用户 id)计算路由规则（hash 值），然后看 hash 值落到了 hash 环的那个地方，根据 hash 值在 hash 环上的位置顺时针找距离最近的 ip 作为路由 ip.<br><img src="/blog/assets/algorithm/chash1.webp" alt="chash1"></p>
+<p>如上图可知 user1,user2 的请求会落到服务器 ip2 进行处理，User3 的请求会落到服务器 ip3 进行处理，user4 的请求会落到服务器 ip4 进行处理，user5,user6 的请求会落到服务器 ip1 进行处理。</p>
+<p>下面考虑当 ip2 的服务器挂了的时候会出现什么情况？<br>当 ip2 的服务器挂了的时候，一致性 hash 环大致如下图：<br><img src="/blog/assets/algorithm/chash2.webp" alt="chash2"></p>
+<p>根据顺时针规则可知 user1,user2 的请求会被服务器 ip3 进行处理，而其它用户的请求对应的处理服务器不变，也就是只有之前被 ip2 处理的一部分用户的映射关系被破坏了，并且其负责处理的请求被顺时针下一个节点委托处理。</p>
+<p>下面考虑当新增机器的时候会出现什么情况？<br>当新增一个 ip5 的服务器后，一致性 hash 环大致如下图：<br><img src="/blog/assets/algorithm/chash3.webp" alt="chash3"></p>
+<p>根据顺时针规则可知之前 user5 的请求应该被 ip5 服务器处理，现在被新增的 ip5 服务器处理，其他用户的请求处理服务器不变，也就是新增的服务器顺时针最近的服务器的一部分请求会被新增的服务器所替代。</p>
+<h2 id="三、一致性-hash-的特性"><a href="#三、一致性-hash-的特性" class="headerlink" title="三、一致性 hash 的特性"></a>三、一致性 hash 的特性</h2><ul>
+<li><p>单调性(Monotonicity)，单调性是指如果已经有一些请求通过哈希分派到了相应的服务器进行处理，又有新的服务器加入到系统中时候，应保证原有的请求可以被映射到原有的或者新的服务器中去，而不会被映射到原来的其它服务器上去。 这个通过上面新增服务器 ip5 可以证明，新增 ip5 后，原来被 ip1 处理的 user6 现在还是被 ip1 处理，原来被 ip1 处理的 user5 现在被新增的 ip5 处理。</p>
+</li>
+<li><p>分散性(Spread)：分布式环境中，客户端请求时候可能不知道所有服务器的存在，可能只知道其中一部分服务器，在客户端看来他看到的部分服务器会形成一个完整的 hash 环。如果多个客户端都把部分服务器作为一个完整 hash 环，那么可能会导致，同一个用户的请求被路由到不同的服务器进行处理。这种情况显然是应该避免的，因为它不能保证同一个用户的请求落到同一个服务器。所谓分散性是指上述情况发生的严重程度。好的哈希算法应尽量避免尽量降低分散性。 一致性 hash 具有很低的分散性</p>
+</li>
+<li><p>平衡性(Balance)：平衡性也就是说负载均衡，是指客户端 hash 后的请求应该能够分散到不同的服务器上去。一致性 hash 可以做到每个服务器都进行处理请求，但是不能保证每个服务器处理的请求的数量大致相同，如下图<br><img src="/blog/assets/algorithm/chash4.webp" alt="chash4"><br>服务器 ip1,ip2,ip3 经过 hash 后落到了一致性 hash 环上，从图中 hash 值分布可知 ip1 会负责处理大概 80%的请求，而 ip2 和 ip3 则只会负责处理大概 20%的请求，虽然三个机器都在处理请求，但是明显每个机器的负载不均衡，这样称为一致性 hash 的倾斜，虚拟节点的出现就是为了解决这个问题。</p>
+</li>
+</ul>
+<h2 id="五、虚拟节点"><a href="#五、虚拟节点" class="headerlink" title="五、虚拟节点"></a>五、虚拟节点</h2><p>当服务器节点比较少的时候会出现上节所说的一致性 hash 倾斜的问题，一个解决方法是多加机器，但是加机器是有成本的，那么就加虚拟节点，比如上面三个机器，每个机器引入 1 个虚拟节点后的一致性 hash 环的图如下：<br><img src="/blog/assets/algorithm/chash5.webp" alt="chash5"></p>
+<p>其中 ip1-1 是 ip1 的虚拟节点，ip2-1 是 ip2 的虚拟节点，ip3-1 是 ip3 的虚拟节点。<br>可知当物理机器数目为 M，虚拟节点为 N 的时候，实际 hash 环上节点个数为 M*N。比如当客户端计算的 hash 值处于 ip2 和 ip3 或者处于 ip2-1 和 ip3-1 之间时候使用 ip3 服务器进行处理。</p>
+<h2 id="六、均匀一致性-hash"><a href="#六、均匀一致性-hash" class="headerlink" title="六、均匀一致性 hash"></a>六、均匀一致性 hash</h2><p>上节我们使用虚拟节点后的图看起来比较均衡，但是如果生成虚拟节点的算法不够好很可能会得到下面的环：<br><img src="/blog/assets/algorithm/chash6.webp" alt="chash6"><br>可知每个服务节点引入 1 个虚拟节点后，情况相比没有引入前均衡性有所改善，但是并不均衡。</p>
+<p>均衡的一致性 hash 应该是如下图：<br><img src="/blog/assets/algorithm/chash7.webp" alt="chash7"></p>
+<p>均匀一致性 hash 的目标是如果服务器有 N 台，客户端的 hash 值有 M 个，那么每个服务器应该处理大概 M/N 个用户的。也就是每台服务器负载尽量均衡</p>
+<h2 id="七、总结"><a href="#七、总结" class="headerlink" title="七、总结"></a>七、总结</h2><p>在分布式系统中一致性 hash 起着不可忽略的地位，无论是分布式缓存，还是分布式 Rpc 框架的负载均衡策略都有所使用。</p>
+
+      
+    </div>
+
+    
+      
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>付四凯</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://linthan.github.io/blog/2020/07/20/tech/algorithm/daiery-2020-0720-2000/" title="深入浅出一致性Hash原理">http://linthan.github.io/blog/2020/07/20/tech/algorithm/daiery-2020-0720-2000/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/blog/tags/技术/" rel="tag"><i class="fa fa-tag"></i> 技术</a>
+          
+            <a href="/blog/tags/算法/" rel="tag"><i class="fa fa-tag"></i> 算法</a>
+          
+            <a href="/blog/tags/面试/" rel="tag"><i class="fa fa-tag"></i> 面试</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/blog/2020/07/17/tech/redis/daiery-2020-0717-1100/" rel="next" title="分布式锁之Redis实现">
+                <i class="fa fa-chevron-left"></i> 分布式锁之Redis实现
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/blog/2020/07/21/tech/redis/daiery-220-0721-0800/" rel="prev" title="图解redis五种数据结构底层实现">
+                图解redis五种数据结构底层实现 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg" alt="付四凯">
+            
+              <p class="site-author-name" itemprop="name">付四凯</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/blog/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/blog/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#三、一致性-hash-的特性"><span class="nav-number">1.</span> <span class="nav-text">三、一致性 hash 的特性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#五、虚拟节点"><span class="nav-number">2.</span> <span class="nav-text">五、虚拟节点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#六、均匀一致性-hash"><span class="nav-number">3.</span> <span class="nav-text">六、均匀一致性 hash</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#七、总结"><span class="nav-number">4.</span> <span class="nav-text">七、总结</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付四凯</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/blog/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/blog/js/utils.js?v=7.1.2"></script>
+
+  <script src="/blog/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/blog/js/affix.js?v=7.1.2"></script>
+
+  <script src="/blog/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/blog/js/scrollspy.js?v=7.1.2"></script>
+<script src="/blog/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/blog/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/blog/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log('Failed to save Visitor num, with error message: ' + responseJSON.error);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log('LeanCloud Counter Error: ' + responseJSON.code + ' ' + responseJSON.error);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz',
+                'X-LC-Key': 'Vfku3wPjnVYyHe33mjB6bJXY',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next gemini use-motion" lang="en">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+  
+  
+    
+      
+    
+    
+      
+    
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+
+
+
+
+
+  <meta http-equiv="Cache-Control" content="no-transform">
+  <meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+  <meta name="msvalidate.01" content="1699A46CB5242072D8403C073F576423">
+
+
+
+
+
+
+
+  
+  
+    
+  
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/fancybox@3/dist/css/jquery.fancybox.min.css">
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/font-awesome.min.css?v=4.7.0">
+
+<link rel="stylesheet" href="/blog/css/main.css?v=7.1.2">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/dragon/dragon-apple-touch-icon.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/dragon/dragon-favicon-32x32.png?v=7.1.2">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/dragon/dragon-favicon-16x16.png?v=7.1.2">
+
+
+  <link rel="mask-icon" href="/blog/images/dragon/dragon-logo.svg?v=7.1.2" color="#222">
+
+
+
+  <meta name="msapplication-config" content="/blog/images/dragon/dragon-browserconfig.xml">
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/blog/',
+    scheme: 'Gemini',
+    version: '7.1.2',
+    sidebar: {"position":"right","width":180,"display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: true,
+    fastclick: true,
+    lazyload: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="废话不多说，直奔主题。 channel 的整体结构图简单说明：  buf 是有缓冲的 channel 所特有的结构，用来存储缓存数据。是个循环链表 sendx 和 recvx 用于记录 buf 这个循环链表中的发送或者接收的 index lock 是个互斥锁。 recvq 和 sendq 分别是接收(&amp;lt;-channel)或者发送(channel &amp;lt;- xxx)的 goroutine 抽">
+<meta name="keywords" content="技术,golang">
+<meta property="og:type" content="article">
+<meta property="og:title" content="图解Go的channel底层实现">
+<meta property="og:url" content="http://linthan.github.io/blog/2020/07/16/tech/golang/daiery-2020-07-16-0700/index.html">
+<meta property="og:site_name" content="付四凯的博客">
+<meta property="og:description" content="废话不多说，直奔主题。 channel 的整体结构图简单说明：  buf 是有缓冲的 channel 所特有的结构，用来存储缓存数据。是个循环链表 sendx 和 recvx 用于记录 buf 这个循环链表中的发送或者接收的 index lock 是个互斥锁。 recvq 和 sendq 分别是接收(&amp;lt;-channel)或者发送(channel &amp;lt;- xxx)的 goroutine 抽">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan1.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan_gif1.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan_gif2.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/send.gif">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan_gif6.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/recv.gif">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/send_single.gif">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/recv_single.gif">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan_channl.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan_block.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan_block1.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan_block2.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan_block3.png">
+<meta property="og:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan_block4.png">
+<meta property="og:updated_time" content="2020-07-16T00:06:45.213Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="图解Go的channel底层实现">
+<meta name="twitter:description" content="废话不多说，直奔主题。 channel 的整体结构图简单说明：  buf 是有缓冲的 channel 所特有的结构，用来存储缓存数据。是个循环链表 sendx 和 recvx 用于记录 buf 这个循环链表中的发送或者接收的 index lock 是个互斥锁。 recvq 和 sendq 分别是接收(&amp;lt;-channel)或者发送(channel &amp;lt;- xxx)的 goroutine 抽">
+<meta name="twitter:image" content="http://linthan.github.io/blog/assets/golang/channel/hchan.png">
+
+
+
+  <link rel="alternate" href="/blog/atom.xml" title="付四凯的博客" type="application/atom+xml">
+
+
+
+  
+  
+  <link rel="canonical" href="http://linthan.github.io/blog/2020/07/16/tech/golang/daiery-2020-07-16-0700/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>图解Go的channel底层实现 | 付四凯的博客</title>
+  
+
+
+
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-97268729-1"></script>
+  <script>
+    var host = window.location.hostname;
+    if (host !== "localhost" || !true) {
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-97268729-1');
+    }
+  </script>
+
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?fad94c1137504ba7685443e9d1f2abe9";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="en">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-right page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/blog/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">付四凯的博客</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <h1 class="site-subtitle" itemprop="description">双手合十，潜心修炼</h1>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags<span class="badge">12</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories<span class="badge">0</span></a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+      
+    
+
+    <a href="/blog/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives<span class="badge">37</span></a>
+
+  </li>
+
+      
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>Search</a>
+        </li>
+      
+    </ul>
+  
+
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="Searching..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+    <div class="reading-progress-bar"></div>
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://linthan.github.io/blog/blog/2020/07/16/tech/golang/daiery-2020-07-16-0700/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="付四凯">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="付四凯的博客">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h2 class="post-title" itemprop="name headline">图解Go的channel底层实现
+
+              
+            
+          </h2>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-07-16 07:30:00" itemprop="dateCreated datePublished" datetime="2020-07-16T07:30:00+08:00">2020-07-16</time>
+            
+
+            
+          </span>
+
+          
+
+          
+            
+            
+          
+
+          
+          
+            <span id="/blog/2020/07/16/tech/golang/daiery-2020-07-16-0700/" class="leancloud_visitors" data-flag-title="图解Go的channel底层实现">
+              <span class="post-meta-divider">|</span>
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Views: </span>
+              
+                <span class="leancloud-visitors-count"></span>
+            </span>
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>废话不多说，直奔主题。</p>
+<h2 id="channel-的整体结构图"><a href="#channel-的整体结构图" class="headerlink" title="channel 的整体结构图"></a>channel 的整体结构图</h2><p><img src="/blog/assets/golang/channel/hchan.png" alt="hchan"><br>简单说明：</p>
+<ul>
+<li>buf 是有缓冲的 channel 所特有的结构，用来存储缓存数据。是个循环链表</li>
+<li>sendx 和 recvx 用于记录 buf 这个循环链表中的发送或者接收的 index</li>
+<li>lock 是个互斥锁。</li>
+<li>recvq 和 sendq 分别是接收(&lt;-channel)或者发送(channel &lt;- xxx)的 goroutine 抽象出来的结构体(sudog)的队列。是个双向链表</li>
+</ul>
+<a id="more"></a>
+<p>源码位于/runtime/chan.go 中(目前版本：1.11)。结构体为 hchan。</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> hchan <span class="keyword">struct</span> &#123;</span><br><span class="line">    qcount   <span class="keyword">uint</span>           <span class="comment">// total data in the queue</span></span><br><span class="line">    dataqsiz <span class="keyword">uint</span>           <span class="comment">// size of the circular queue</span></span><br><span class="line">    buf      unsafe.Pointer <span class="comment">// points to an array of dataqsiz elements</span></span><br><span class="line">    elemsize <span class="keyword">uint16</span></span><br><span class="line">    closed   <span class="keyword">uint32</span></span><br><span class="line">    elemtype *_type <span class="comment">// element type</span></span><br><span class="line">    sendx    <span class="keyword">uint</span>   <span class="comment">// send index</span></span><br><span class="line">    recvx    <span class="keyword">uint</span>   <span class="comment">// receive index</span></span><br><span class="line">    recvq    waitq  <span class="comment">// list of recv waiters</span></span><br><span class="line">    sendq    waitq  <span class="comment">// list of send waiters</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// lock protects all fields in hchan, as well as several</span></span><br><span class="line">    <span class="comment">// fields in sudogs blocked on this channel.</span></span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="comment">// Do not change another G's status while holding this lock</span></span><br><span class="line">    <span class="comment">// (in particular, do not ready a G), as this can deadlock</span></span><br><span class="line">    <span class="comment">// with stack shrinking.</span></span><br><span class="line">    lock mutex</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面我们来详细介绍 hchan 中各部分是如何使用的。</p>
+<h2 id="先从创建开始"><a href="#先从创建开始" class="headerlink" title="先从创建开始"></a>先从创建开始</h2><p>我们首先创建一个 channel。</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">3</span>)</span><br></pre></td></tr></table></figure>
+<p><img src="/blog/assets/golang/channel/hchan1.png" alt="hchan1"><br>创建 channel 实际上就是在内存中实例化了一个 hchan 的结构体，并返回一个 ch 指针，我们使用过程中 channel 在函数之间的传递都是用的这个指针，这就是为什么函数传递中无需使用 channel 的指针，而直接用 channel 就行了，因为 channel 本身就是一个指针。</p>
+<h2 id="channel-中发送-send-ch-lt-xxx-和-recv-lt-ch-接收"><a href="#channel-中发送-send-ch-lt-xxx-和-recv-lt-ch-接收" class="headerlink" title="channel 中发送 send(ch &lt;- xxx)和 recv(&lt;- ch)接收"></a>channel 中发送 send(ch &lt;- xxx)和 recv(&lt;- ch)接收</h2><p>先考虑一个问题，如果你想让 goroutine 以先进先出(FIFO)的方式进入一个结构体中，你会怎么操作？<br>加锁！对的！channel 就是用了一个锁。hchan 本身包含一个互斥锁 mutex</p>
+<h2 id="channel-中队列是如何实现的"><a href="#channel-中队列是如何实现的" class="headerlink" title="channel 中队列是如何实现的"></a>channel 中队列是如何实现的</h2><p>channel 中有个缓存 buf，是用来缓存数据的(假如实例化了带缓存的 channel 的话)队列。我们先来看看是如何实现“队列”的。<br>还是刚才创建的那个 channel</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">3</span>)</span><br></pre></td></tr></table></figure>
+<p><img src="/blog/assets/golang/channel/hchan_gif1.png" alt="hchan_gif1"></p>
+<p>当使用 send (ch &lt;- xx)或者 recv ( &lt;-ch)的时候，首先要锁住 hchan 这个结构体。</p>
+<p><img src="/blog/assets/golang/channel/hchan_gif2.png" alt="hchan_gif2"></p>
+<p>然后开始 send (ch &lt;- xx)数据。<br>一</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ch &lt;- <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>二</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ch &lt;- <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>三</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ch &lt;- <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>这时候满了，队列塞不进去了<br>动态图表示为：<br><img src="/blog/assets/golang/channel/send.gif" alt="send"></p>
+<p>然后是取 recv ( &lt;-ch)的过程，是个逆向的操作，也是需要加锁。<br><img src="/blog/assets/golang/channel/hchan_gif6.png" alt="hchan_gif6"></p>
+<p>然后开始 recv (&lt;-ch)数据。<br>一</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;-ch</span><br></pre></td></tr></table></figure>
+<p>二</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;-ch</span><br></pre></td></tr></table></figure>
+<p>三</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;-ch</span><br></pre></td></tr></table></figure>
+<p>图为：<br><img src="/blog/assets/golang/channel/recv.gif" alt="recv"></p>
+<p>注意以上两幅图中 buf 和 recvx 以及 sendx 的变化，recvx 和 sendx 是根据循环链表 buf 的变动而改变的。<br>至于为什么 channel 会使用循环链表作为缓存结构，我个人认为是在缓存列表在动态的 send 和 recv 过程中，定位当前 send 或者 recvx 的位置、选择 send 的和 recvx 的位置比较方便吧，只要顺着链表顺序一直旋转操作就好。</p>
+<p>缓存中按链表顺序存放，取数据的时候按链表顺序读取，符合 FIFO 的原则。</p>
+<h2 id="send-recv-的细化操作"><a href="#send-recv-的细化操作" class="headerlink" title="send/recv 的细化操作"></a>send/recv 的细化操作</h2><p>注意：缓存链表中以上每一步的操作，都是需要加锁操作的！</p>
+<p>每一步的操作的细节可以细化为：</p>
+<ul>
+<li>第一，加锁</li>
+<li>第二，把数据从 goroutine 中 copy 到“队列”中(或者从队列中 copy 到 goroutine 中）。</li>
+<li>第三，释放锁</li>
+</ul>
+<p>每一步的操作总结为动态图为：(发送过程)<br><img src="/blog/assets/golang/channel/send_single.gif" alt="send_single"><br>或者为：(接收过程)<br><img src="/blog/assets/golang/channel/recv_single.gif" alt="recv_single"></p>
+<p>所以不难看出，Go 中那句经典的话：Do not communicate by sharing memory; instead, share memory by communicating.的具体实现就是利用 channel 把数据从一端 copy 到了另一端！<br>还真是符合 channel 的英文含义：<br><img src="/blog/assets/golang/channel/hchan_channl.png" alt="hchan_channl"></p>
+<h2 id="当-channel-缓存满了之后会发生什么？这其中的原理是怎样的？"><a href="#当-channel-缓存满了之后会发生什么？这其中的原理是怎样的？" class="headerlink" title="当 channel 缓存满了之后会发生什么？这其中的原理是怎样的？"></a>当 channel 缓存满了之后会发生什么？这其中的原理是怎样的？</h2><p>使用的时候，我们都知道，当 channel 缓存满了，或者没有缓存的时候，我们继续 send(ch &lt;- xxx)或者 recv(&lt;- ch)会阻塞当前 goroutine，但是，是如何实现的呢？</p>
+<p>我们知道，Go 的 goroutine 是用户态的线程(user-space threads)，用户态的线程是需要自己去调度的，Go 有运行时的 scheduler 去帮我们完成调度这件事情。关于 Go 的调度模型 GMP 模型我在此不做赘述，如果不了解，可以看我另一篇文章(Go 调度原理)</p>
+<p>goroutine 的阻塞操作，实际上是调用 send (ch &lt;- xx)或者 recv ( &lt;-ch)的时候主动触发的，具体请看以下内容：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//goroutine1 中，记做G1</span></span><br><span class="line"></span><br><span class="line">ch := <span class="built_in">make</span>(<span class="keyword">chan</span> <span class="keyword">int</span>, <span class="number">3</span>)</span><br><span class="line"></span><br><span class="line">ch &lt;- <span class="number">1</span></span><br><span class="line">ch &lt;- <span class="number">1</span></span><br><span class="line">ch &lt;- <span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p><img src="/blog/assets/golang/channel/hchan_block.png" alt="hchan_block"><br><img src="/blog/assets/golang/channel/hchan_block1.png" alt="hchan_block1"></p>
+<p>这个时候 G1 正在正常运行,当再次进行 send 操作(ch&lt;-1)的时候，会主动调用 Go 的调度器,让 G1 等待，并从让出 M，让其他 G 去使用<br><img src="/blog/assets/golang/channel/hchan_block2.png" alt="hchan_block2"><br>同时 G1 也会被抽象成含有 G1 指针和 send 元素的 sudog 结构体保存到 hchan 的 sendq 中等待被唤醒。<br><img src="/blog/assets/golang/channel/hchan_block3.png" alt="hchan_block3"><br>那么，G1 什么时候被唤醒呢？这个时候 G2 隆重登场。</p>
+<p><img src="/blog/assets/golang/channel/hchan_block4.png" alt="hchan_block4"><br>G2 执行了 recv 操作 p := &lt;-ch，于是会发生以下的操作：</p>
+<p>G2 从缓存队列中取出数据，channel 会将等待队列中的 G1 推出，将 G1 当时 send 的数据推到缓存中，然后调用 Go 的 scheduler，唤醒 G1，并把 G1 放到可运行的 Goroutine 队列中。</p>
+<p>假如是先进行执行 recv 操作的 G2 会怎么样？<br>你可能会顺着以上的思路反推。首先：</p>
+<p>这个时候 G2 会主动调用 Go 的调度器,让 G2 等待，并从让出 M，让其他 G 去使用。<br>G2 还会被抽象成含有 G2 指针和 recv 空元素的 sudog 结构体保存到 hchan 的 recvq 中等待被唤醒</p>
+<p>此时恰好有个 goroutine G1 开始向 channel 中推送数据 ch &lt;- 1。<br>此时，非常有意思的事情发生了：</p>
+<p>G1 并没有锁住 channel，然后将数据放到缓存中，而是直接把数据从 G1 直接 copy 到了 G2 的栈中。<br>这种方式非常的赞！在唤醒过程中，G2 无需再获得 channel 的锁，然后从缓存中取数据。减少了内存的 copy，提高了效率。</p>
+<p>之后的事情显而易见：</p>
+<h2 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a>参考文献：</h2><ul>
+<li><a href="https://www.youtube.com/watch?v=KBZlN0izeiY" target="_blank" rel="noopener">https://www.youtube.com/watch?v=KBZlN0izeiY</a></li>
+<li><a href="https://zhuanlan.zhihu.com/p/27917262" target="_blank" rel="noopener">https://zhuanlan.zhihu.com/p/27917262</a></li>
+</ul>
+
+      
+    </div>
+
+    
+      
+
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+      <div>
+        
+
+
+
+
+  
+
+
+
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>付四凯</li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    
+    <a href="http://linthan.github.io/blog/2020/07/16/tech/golang/daiery-2020-07-16-0700/" title="图解Go的channel底层实现">http://linthan.github.io/blog/2020/07/16/tech/golang/daiery-2020-07-16-0700/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" rel="noopener" target="_blank"><i class="fa fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.</li>
+</ul>
+
+      </div>
+    
+
+    <footer class="post-footer">
+      
+        
+          
+        
+        <div class="post-tags">
+          
+            <a href="/blog/tags/技术/" rel="tag"><i class="fa fa-tag"></i> 技术</a>
+          
+            <a href="/blog/tags/golang/" rel="tag"><i class="fa fa-tag"></i> golang</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/blog/2020/07/15/tech/interview/daiery-2020-0715-2300/" rel="next" title="Http get与pos、HEAD的区别">
+                <i class="fa fa-chevron-left"></i> Http get与pos、HEAD的区别
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/blog/2020/07/16/tech/database/daiery-2020-0716-0830/" rel="prev" title="数据库索引原理，及MySQL索引类型">
+                数据库索引原理，及MySQL索引类型 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="https://resource.melican.cn/blog/assets/blogImg/mylog.jpg" alt="付四凯">
+            
+              <p class="site-author-name" itemprop="name">付四凯</p>
+              <div class="site-description motion-element" itemprop="description"></div>
+          </div>
+
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/blog/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:zhongmingmao0625@gmail.com" title="E-Mail &rarr; mailto:zhongmingmao0625@gmail.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+             <div class="cc-license motion-element" itemprop="license">
+              
+              
+                
+              
+              
+              
+              <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh" class="cc-opacity" rel="noopener" target="_blank"><img src="/blog/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+             </div>
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#channel-的整体结构图"><span class="nav-number">1.</span> <span class="nav-text">channel 的整体结构图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#先从创建开始"><span class="nav-number">2.</span> <span class="nav-text">先从创建开始</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#channel-中发送-send-ch-lt-xxx-和-recv-lt-ch-接收"><span class="nav-number">3.</span> <span class="nav-text">channel 中发送 send(ch &lt;- xxx)和 recv(&lt;- ch)接收</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#channel-中队列是如何实现的"><span class="nav-number">4.</span> <span class="nav-text">channel 中队列是如何实现的</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#send-recv-的细化操作"><span class="nav-number">5.</span> <span class="nav-text">send/recv 的细化操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#当-channel-缓存满了之后会发生什么？这其中的原理是怎样的？"><span class="nav-number">6.</span> <span class="nav-text">当 channel 缓存满了之后会发生什么？这其中的原理是怎样的？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考文献："><span class="nav-number">7.</span> <span class="nav-text">参考文献：</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2015 – <span itemprop="copyrightYear">2021</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">付四凯</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> v7.1.2</div>
+
+
+
+
+        
+
+
+
+
+  <script>
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "//tajs.qq.com/stats?sId=61684383";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+          <span id="scrollpercent"><span>0</span>%</span>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+  
+  <script src="/blog/lib/jquery/index.js?v=3.4.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fastclick@1/lib/fastclick.min.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/jquery_lazyload@1/jquery.lazyload.min.js"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/blog/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/fancybox@3/dist/js/jquery.fancybox.pack.js"></script>
+
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-reading-progress@1.1/reading_progress.min.js"></script>
+
+
+  
+
+
+  <script src="/blog/js/utils.js?v=7.1.2"></script>
+
+  <script src="/blog/js/motion.js?v=7.1.2"></script>
+
+
+
+  
+  
+
+
+  <script src="/blog/js/affix.js?v=7.1.2"></script>
+
+  <script src="/blog/js/schemes/pisces.js?v=7.1.2"></script>
+
+
+
+
+  
+  <script src="/blog/js/scrollspy.js?v=7.1.2"></script>
+<script src="/blog/js/post-details.js?v=7.1.2"></script>
+
+
+
+  
+
+
+  <script src="/blog/js/next-boot.js?v=7.1.2"></script>
+
+
+  
+
+  
+
+  
+  
+  
+    
+  
+
+  
+
+  
+  
+  
+
+
+  
+
+
+  
+
+
+  
+  <script>
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/blog/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url).replace(/\/{2,}/g, '/');
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x"></i></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x"></i></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+  
+  <script>
+    
+    function addCount(Counter) {
+      var $visitors = $('.leancloud_visitors');
+      var url = $visitors.attr('id').trim();
+      var title = $visitors.attr('data-flag-title').trim();
+
+      Counter('get', '/classes/Counter', { where: JSON.stringify({ url }) })
+        .done(function({ results }) {
+          if (results.length > 0) {
+            var counter = results[0];
+            
+            Counter('put', '/classes/Counter/' + counter.objectId, JSON.stringify({ time: { '__op': 'Increment', 'amount': 1 } }))
+            
+              .done(function() {
+                var $element = $(document.getElementById(url));
+                $element.find('.leancloud-visitors-count').text(counter.time + 1);
+              })
+            
+              .fail(function ({ responseJSON }) {
+                console.log('Failed to save Visitor num, with error message: ' + responseJSON.error);
+              })
+          } else {
+            
+              Counter('post', '/classes/Counter', JSON.stringify({ title: title, url: url, time: 1 }))
+                .done(function() {
+                  var $element = $(document.getElementById(url));
+                  $element.find('.leancloud-visitors-count').text(1);
+                })
+                .fail(function() {
+                  console.log('Failed to create');
+                });
+            
+          }
+        })
+        .fail(function ({ responseJSON }) {
+          console.log('LeanCloud Counter Error: ' + responseJSON.code + ' ' + responseJSON.error);
+        });
+    }
+    
+
+    $(function() {
+      $.get('https://app-router.leancloud.cn/2/route?appId=' + 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz')
+        .done(function({ api_server }) {
+          var Counter = function(method, url, data) {
+            return $.ajax({
+              method: method,
+              url: 'https://' + api_server + '/1.1' + url,
+              headers: {
+                'X-LC-Id': 'e2IMURVDnzc37o6emkTS4i6R-gzGzoHsz',
+                'X-LC-Key': 'Vfku3wPjnVYyHe33mjB6bJXY',
+                'Content-Type': 'application/json',
+              },
+              data: data
+            });
+          };
+          
+            addCount(Counter);
+          
+        });
+    });
+  </script>
+
+
+
+  
+
+  
+  
+
+  
+  
+
+  
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+  
+  
+    
+  
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-bookmark@1/bookmark.min.js"></script>
+  <script>
+  
+    bookmark.scrollToMark('auto', "#more");
+  
+  </script>
+
+
+  
+<script>
+  $('.highlight').not('.gist .highlight').each(function(i, e) {
+    var $wrap = $('<div>').addClass('highlight-wrap');
+    $(e).after($wrap);
+    $wrap.append($('<button>').addClass('copy-btn').append('Copy').on('click', function(e) {
+      var code = $(this).parent().find('.code').find('.line').map(function(i, e) {
+        return $(e).text();
+      }).toArray().join('\n');
+      var ta = document.createElement('textarea');
+      var yPosition = window.pageYOffset || document.documentElement.scrollTop;
+      ta.style.top = yPosition + 'px'; // Prevent page scroll
+      ta.style.position = 'absolute';
+      ta.style.opacity = '0';
+      ta.readOnly = true;
+      ta.value = code;
+      document.body.appendChild(ta);
+      const selection = document.getSelection();
+      const selected = selection.rangeCount > 0 ? selection.getRangeAt(0) : false;
+      ta.select();
+      ta.setSelectionRange(0, code.length);
+      ta.readOnly = false;
+      var result = document.execCommand('copy');
+      
+        if (result) $(this).text('Copied');
+        else $(this).text('Copy failed');
+      
+      ta.blur(); // For iOS
+      $(this).blur();
+      if (selected) {
+        selection.removeAllRanges();
+        selection.addRange(selected);
+      }
+    })).on('mouseleave', function(e) {
+      var $b = $(this).find('.copy-btn');
+      setTimeout(function() {
+        $b.text('Copy');
+      }, 300);
+    }).append(e);
+  })
+</script>
+
+
+  
+
+  
+
+</body>
+</html>
